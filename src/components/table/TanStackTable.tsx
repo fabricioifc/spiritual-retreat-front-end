@@ -495,9 +495,9 @@ export function TanStackTable<
   // Export buttons (modular): build buttons based on exportConfig.extensions and handlers
   const exportButtons = useMemo(() => {
     const handlers = exportConfig?.handlers as Record<string, ExportHandler<T>>;
+    if (!handlers) return null;
     const extensions = (exportConfig?.extensions ??
       (Object.keys(handlers) as string[])) as string[];
-    if (!handlers) return null;
     return extensions.map((ext) => {
       const handler = handlers[ext];
       if (!handler) return null;

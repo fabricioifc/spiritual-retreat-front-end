@@ -1,17 +1,16 @@
 export type OutboxStatus =
-  | "pending"
-  | "processing"
-  | "processed"
-  | "failed"
-  | "queued"
-  | "unknown";
+  | 'pending'
+  | 'processing'
+  | 'processed'
+  | 'failed'
+  | 'queued'
+  | 'unknown';
 
 export interface OutboxSummary {
   pending: number;
-  processed: number;
-  failed: number;
-  lastRunAt: string | null;
-  lastSuccessAt: string | null;
+  withErrors: number;
+  lastProcessed: string | null;
+  oldestPending: string | null;
 }
 
 export interface OutboxMessage {

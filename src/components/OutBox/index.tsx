@@ -364,7 +364,7 @@ export default function RetreatOutboxTab() {
           ))}
         </TextField>
 
-        <TextField
+        {/* <TextField
           label={translate('filters.type', 'Tipo')}
           value={filters.type}
           onChange={(event) => handleFilterChange('type', event.target.value)}
@@ -390,7 +390,7 @@ export default function RetreatOutboxTab() {
             handleFilterChange('endDate', event.target.value)
           }
           InputLabelProps={{ shrink: true }}
-        />
+        /> */}
 
         <Button variant="text" color="inherit" onClick={handleResetFilters}>
           {translate('filters.reset', 'Limpar filtros')}
@@ -440,8 +440,6 @@ export default function RetreatOutboxTab() {
           enableRowSelection={false}
           enableGlobalFilter={false}
           enableColumnFilters={false}
-          enableExport={true}
-          enableExportPdf={true}
           getRowId={(row) => row.id}
         />
       </Box>
