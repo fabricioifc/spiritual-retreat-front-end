@@ -8,13 +8,9 @@ import NextAuth, {
 import 'next-auth/jwt';
 import { JWT } from 'next-auth/jwt';
 import Credentials from 'next-auth/providers/credentials';
-import GitHub from 'next-auth/providers/github';
-import Google from 'next-auth/providers/google';
 
 import { UnstorageAdapter } from '@auth/unstorage-adapter';
 import { jwtDecode } from 'jwt-decode';
-// import Atlassian from "next-auth/providers/atlassian"
-
 import { createStorage } from 'unstorage';
 import memoryDriver from 'unstorage/drivers/memory';
 import vercelKVDriver from 'unstorage/drivers/vercel-kv';
@@ -60,7 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       console.error(error.message);
     },
     warn(code) {
-      console.warn(code);
+      console.log(code);
     },
     debug(code, message) {
       // Evite enviar logs de debug para produção
@@ -72,8 +68,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   theme: { logo: 'https://authjs.dev/img/logo-sm.png' },
   session: {
     strategy: 'jwt',
-    maxAge: 15 * 60, // 4 minutes
-    updateAge: 30 * 60, // 30 minutes
+    maxAge: 15 * 60, // 15 minutos
+    updateAge: 5 * 60, // Tenta atualizar a sessão a cada 5 minutos
   },
   pages: {
     signIn: '/login',
@@ -84,12 +80,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   //basePath: "/auth",
   callbacks: {
     async signIn({ user, account }) {
-      // Allow OAuth without email verification
       if (account?.provider !== 'credentials') return true;
-
-      //const existingUser = await getUserById(user.id);
-      //todo email verification and twofactor
-
       if (user) {
         //console.log("User signed in:", user);
         return true;
@@ -98,8 +89,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async jwt({ token, user }) {
-      // Initial signin contains a 'User' object from authorize method
-      //console.log(user,token,'JWT USER')
       if (user) {
         const enrichedUser = user as User & {
           tokens?: BackendJWT;
@@ -120,7 +109,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // ✅ Validação: se não tem data, significa que o token é inválido
       if (!token.data) {
-        console.warn('❌ Token without data - invalid token');
+        console.log('❌ Token without data - invalid token');
         return { ...token, error: 'NoTokenData' } as JWT;
       }
 
@@ -157,7 +146,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         console.log('🔄 Refreshing access token...');
         const refreshedToken = await refreshAccessToken(token);
         if (refreshedToken.error) {
-          console.warn('❌ Refresh failed - forcing logout');
+          console.log('❌ Refresh failed - forcing logout');
           return { ...token, error: 'RefreshAccessTokenError' };
         }
 
@@ -167,7 +156,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // This should not really happen unless you get really unlucky with
       // the timing of the token expiration because the middleware should
       // have caught this case before the callback is called
-      console.warn('Both tokens have expired');
+      console.log('Both tokens have expired');
       return { ...token, error: 'RefreshTokenExpired' } as JWT;
     },
     async session({ session, token }) {
@@ -183,7 +172,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       };
 
       if (token.error) {
-        console.warn('❌ Token error detected:', token.error);
+        console.log('❌ Token error detected:', token.error);
         return buildInvalidSession(token.error as string);
       }
 
@@ -191,7 +180,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.data?.user && Object.keys(token.data.user).length > 0;
 
       if (!hasUserData) {
-        console.warn('❌ Invalid user data in token');
+        console.log('❌ Invalid user data in token');
         return buildInvalidSession('InvalidUserData');
       }
 
@@ -208,7 +197,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         auth?.error === 'RefreshAccessTokenError' ||
         auth?.error === 'RefreshTokenExpired'
       ) {
-        console.warn('❌ Unauthorized due to token error:', auth.error);
+        console.log('❌ Unauthorized due to token error:', auth.error);
         return false;
       }
       const { pathname } = request.nextUrl;
@@ -220,21 +209,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
-    // authorized: ({ auth, request }) => {
-    //   if (auth?.error) {
-    //     console.debug("❌ Unauthorized due to token error:", auth.error);
-    //     return false;
-    //   }
-    //   const { pathname } = request.nextUrl;
-    //   const publicRoutes = [...authRoutes, ...pubRoutes];
-    //   if (!publicRoutes.includes(pathname)) return !auth?.error && !!auth?.user;
-    //   return true;
-    // }
   },
-  experimental: { enableWebAuthn: true },
   providers: [
-    GitHub,
-    Google,
     Credentials({
       id: 'confirmCode',
       name: 'Confirm Code',
@@ -377,50 +353,58 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 });
 
+let refreshPromise: Promise<JWT> | null = null;
+
 async function refreshAccessToken(nextAuthJWT: JWT): Promise<JWT> {
-  try {
-    // Get a new access token from backend using the refresh token
-    const refreshedTokens = await refresh(nextAuthJWT.data.tokens);
-
-    if (!refreshedTokens?.accessToken)
-      return { ...nextAuthJWT, error: 'RefreshAccessTokenError' };
-    const { exp }: DecodedJWT = jwtDecode(refreshedTokens.accessToken);
-
-    // Update the token and validity in the next-auth object
-    // nextAuthJWT.data.validity.valid_until = exp;
-    // nextAuthJWT.data.tokens.access = accessToken.accessToken;
-    // Ensure the returned jwt has a new object reference ID
-    // (jwt will not be updated otherwise)
-    return {
-      ...nextAuthJWT,
-      data: {
-        ...nextAuthJWT.data,
-        validity: {
-          ...nextAuthJWT.data.validity,
-          valid_until: exp,
-        },
-        tokens: {
-          ...nextAuthJWT.data.tokens,
-          accessToken: refreshedTokens.accessToken,
-          refreshToken:
-            refreshedTokens.refreshToken ??
-            nextAuthJWT.data.tokens.refreshToken,
-        },
-      },
-    };
-  } catch (error) {
-    console.error('Failed to refresh access token:', error);
-    return {
-      ...nextAuthJWT,
-      error: 'RefreshAccessTokenError',
-    };
+  // Se já existe um refresh acontecendo, retorna a promessa dele e não inicia outro!
+  if (refreshPromise) {
+    console.log('🔒 Refresh in progress - reusing existing promise');
+    return refreshPromise;
   }
+
+  // Inicia o processo e guarda a promessa na variável
+  refreshPromise = (async () => {
+    try {
+      console.log('🔄 Starting new refresh request...');
+      const refreshedTokens = await refresh(nextAuthJWT.data.tokens);
+
+      if (!refreshedTokens?.accessToken) {
+        throw new Error('No access token returned');
+      }
+
+      const { exp }: DecodedJWT = jwtDecode(refreshedTokens.accessToken);
+
+      console.log('✅ Refresh successful!');
+
+      return {
+        ...nextAuthJWT,
+        data: {
+          ...nextAuthJWT.data,
+          validity: {
+            ...nextAuthJWT.data.validity,
+            valid_until: exp,
+          },
+          tokens: {
+            ...nextAuthJWT.data.tokens,
+            accessToken: refreshedTokens.accessToken,
+            // Se o backend rotaciona o refresh token, é CRUCIAL atualizar aqui
+            refreshToken:
+              refreshedTokens.refreshToken ??
+              nextAuthJWT.data.tokens.refreshToken,
+          },
+        },
+      };
+    } catch (error) {
+      console.error('❌ Failed to refresh access token:', error);
+      return {
+        ...nextAuthJWT,
+        error: 'RefreshAccessTokenError',
+      };
+    } finally {
+      // Importante: Limpa a variável para permitir futuros refreshes
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
-
-// class InvalidLoginError extends CredentialsSignin {
-//   code = "Invalid identifier or password";
-// }
-
-// class UserNotActivatedError extends CredentialsSignin {
-//   code = "User not activated"
-// }

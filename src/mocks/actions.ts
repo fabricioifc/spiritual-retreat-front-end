@@ -45,7 +45,7 @@ export async function refresh(tokens: {
     const rawPayload = await response
       .json()
       .catch(() => ({ error: 'Unable to parse refresh response' }));
-
+    console.log(rawPayload, 'rawPayload');
     if (!response.ok) {
       throw Object.assign(
         new Error(
