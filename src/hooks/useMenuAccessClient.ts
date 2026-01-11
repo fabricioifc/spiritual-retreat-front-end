@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react';
 
-import { Session, UserObject, UserRoles } from 'next-auth';
+import { UserObject, UserRoles } from 'next-auth';
+import { useSession } from 'next-auth/react';
 
 import {
   MenuItem,
@@ -10,19 +11,33 @@ import {
   menuConfig,
 } from '../components/navigation/SideMenu/shared';
 
-export function useMenuAccess(session: Session | null = null) {
+export function useMenuAccessClient() {
+  const { data: session, status } = useSession();
   const user = useMemo(() => {
     return session?.user as UserObject | null;
   }, [session]);
+
+  if (status === 'loading') {
+    return {
+      hasAccess: () => false,
+      getAccessibleMenus: () => [],
+      canAccessMenu: () => false,
+      debugUserAccess: () => {},
+      user: null,
+      isLoading: true,
+      status,
+    };
+  }
+
   if (!session) {
     return {
       hasAccess: () => false,
       getAccessibleMenus: () => [],
       canAccessMenu: () => false,
-      isLoading: false,
-      user: null,
-      status: 'unauthenticated' as const,
       debugUserAccess: () => {},
+      user: null,
+      isLoading: false,
+      status,
     };
   }
 
@@ -118,6 +133,6 @@ export function useMenuAccess(session: Session | null = null) {
     debugUserAccess,
     user,
     isLoading: false,
-    status: 'authenticated' as const,
+    status,
   };
 }

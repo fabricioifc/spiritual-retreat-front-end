@@ -1,13 +1,14 @@
-import dynamic from "next/dynamic";
+import { auth } from '@/auth';
 
-const SideMenuDrawer = dynamic(
-  () => import("@/src/components/navigation/SideMenu")
-);
+import SideMenuDrawer from '../SideMenu';
 
-const ProtectedLayoutContent = ({
+const ProtectedLayoutContent = async ({
   children,
 }: {
   children: React.ReactNode;
-}) => <SideMenuDrawer>{children}</SideMenuDrawer>;
+}) => {
+  const session = await auth();
+  return <SideMenuDrawer session={session}>{children}</SideMenuDrawer>;
+};
 
 export default ProtectedLayoutContent;

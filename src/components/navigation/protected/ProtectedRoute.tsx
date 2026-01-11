@@ -1,116 +1,50 @@
-"use client";
+'use client';
 
-import { useMenuAccess } from "@/src/hooks/useMenuAccess";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { menuConfig } from "../SideMenu/shared";
-import { CircularProgress, Box } from "@mui/material";
+import { useMemo } from 'react';
+
+import { Session } from 'next-auth';
+import { usePathname } from 'next/navigation';
+
+import { useMenuAccess } from '@/src/hooks/useMenuAccess';
+import getPermission from '@/src/utils/getPermission';
+
+import NoPermissionWarning from './NoPermissionWarning';
 
 export default function ProtectedRoute({
   children,
+  session,
 }: {
   children: React.ReactNode;
+  session: Session | null;
 }) {
-  const { canAccessMenu, isLoading, status, user } = useMenuAccess();
   const pathname = usePathname();
-  const router = useRouter();
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const { user } = useMenuAccess(session);
 
-  useEffect(() => {
-    // ✅ Aguardar a sessão carregar
-    if (isLoading || status === "loading") {
-      setHasAccess(null);
-      return;
-    }
+  const pagePermission = useMemo(() => {
+    if (!pathname) return null;
 
-    // ✅ Se não está autenticado, redirecionar para login
-    // if (status === "unauthenticated") {
-    //   router.push("/login");
-    //   return;
-    // }
+    // Extrair a primeira parte da URL (ex: /dashboard -> dashboard)
+    const pathParts = pathname.split('/').filter(Boolean);
+    const firstPart = pathParts[0];
 
-    // ✅ Se está autenticado, verificar acesso
-    if (status === "authenticated" && user) {
-      const checkAccess = () => {
-        try {
-          // ✅ CORREÇÃO: Verificação mais robusta
-          let hasRouteAccess = false;
+    if (!firstPart) return null;
 
-          // 1. Verificar rotas públicas primeiro
-          const publicRoutes = ["/dashboard", "/profile"];
-          if (publicRoutes.some((route) => pathname.startsWith(route))) {
-            hasRouteAccess = true;
-          }
+    // Retornar no formato "section.view" (ex: dashboard.read)
+    return `${firstPart}.read`;
+  }, [pathname]);
 
-          // 2. Verificar menus específicos
-          else {
-            const matchingMenu = menuConfig.find((menu) =>
-              pathname.startsWith(menu.path)
-            );
+  const havePermission = useMemo(() => {
+    if (!user || !pagePermission) return false;
 
-            if (matchingMenu) {
-              hasRouteAccess = canAccessMenu(matchingMenu.id);
-            } else {
-              // 3. Fallback: verificar baseado no pathname
-              if (pathname.startsWith("/users")) {
-                hasRouteAccess = canAccessMenu("users");
-              } else if (pathname.startsWith("/settings")) {
-                hasRouteAccess = canAccessMenu("settings");
-              } else {
-                // 4. Por padrão, permitir se não há regra específica
-                hasRouteAccess = true;
-              }
-            }
-          }
+    return getPermission({
+      permissions: user.permissions,
+      permission: pagePermission,
+      role: user.role,
+    });
+  }, [user, pagePermission]);
 
-          setHasAccess(hasRouteAccess);
-
-          if (!hasRouteAccess) {
-            router.push("/unauthorized");
-          }
-        } catch (error) {
-          console.error("❌ Error in access check:", error);
-          // Em caso de erro, permitir acesso (ou redirecionar conforme sua regra)
-          setHasAccess(true);
-        }
-      };
-
-      const timer = setTimeout(checkAccess, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [pathname, canAccessMenu, router, isLoading, status, user]);
-
-  // ✅ Mostrar loading enquanto carrega sessão
-  if (isLoading || status === "loading") {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // ✅ Aguardar verificação de acesso
-  if (hasAccess === null) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // ✅ Se não tem acesso, não renderizar (vai redirecionar)
-  if (!hasAccess) {
-    return null;
+  if (!user || !havePermission) {
+    return <NoPermissionWarning />;
   }
 
   return <>{children}</>;
