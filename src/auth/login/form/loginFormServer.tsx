@@ -1,13 +1,16 @@
-// src/auth/login/form/index.tsx
 'use client';
 
 import React, { useActionState } from 'react';
 
+import { useSearchParams } from 'next/navigation';
+
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import {
   Avatar,
   Box,
   Checkbox,
   FormControlLabel,
+  Grid,
   Link,
   Paper,
   TextField,
@@ -29,84 +32,85 @@ const initialState: LoginState = {
   errors: {},
 };
 
-// Wrapper para adaptar assinatura (prevState, formData)
-async function loginActionWrapper(prevState: LoginState, formData: FormData) {
-  // Reutiliza a action existente (mantendo compatibilidade)
-  const result = await loginServerAction(formData);
-  // Se loginServerAction fez redirect, execução não continua.
-  if (result && 'errors' in result) {
-    return result as LoginState;
-  }
-  return { message: '', errors: {} }; // sucesso (redirect já ocorreu)
+async function loginActionWrapper(
+  prevState: LoginState | undefined,
+  formData: FormData
+) {
+  return await loginServerAction(formData);
 }
 
 export default function LoginFormServer() {
   const [state, formAction] = useActionState(loginActionWrapper, initialState);
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
   return (
     <Paper
-      elevation={0}
+      elevation={0} // Elevation 0 para mesclar melhor com o fundo branco do Grid direito
       sx={{
         width: '100%',
-        p: 4,
-        borderRadius: 2,
-        boxShadow: (theme) => `0px 4px 12px ${theme.palette.primary.main}80`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Avatar sx={{ m: 1, bgcolor: 'primary.main' }} />
-        <Typography component="h1" variant="h5">
-          Entrar
-        </Typography>
+      <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
+        <LockOutlinedIcon />
+      </Avatar>
 
-        <Box component="form" action={formAction} sx={{ mt: 1 }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            name="email"
-            label="Endereço de Email"
-            autoComplete="email"
-            autoFocus
-            error={!!state?.errors?.email}
-            helperText={state?.errors?.email?.[0]}
-          />
+      <Typography component="h1" variant="h5">
+        Entrar
+      </Typography>
 
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Senha"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            error={!!state?.errors?.password}
-            helperText={state?.errors?.password?.[0]}
-          />
+      <Box component="form" action={formAction} sx={{ mt: 1, width: '100%' }}>
+        <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
-          <FormControlLabel
-            control={<Checkbox name="remember" value="yes" color="primary" />}
-            label="Lembrar-me"
-          />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="email"
+          name="email"
+          label="Endereço de Email"
+          autoComplete="email"
+          autoFocus
+          error={!!state?.errors?.email}
+          helperText={state?.errors?.email?.[0]}
+        />
 
-          <SubmitButton />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          name="password"
+          label="Senha"
+          type="password"
+          id="password"
+          autoComplete="current-password"
+          error={!!state?.errors?.password}
+          helperText={state?.errors?.password?.[0]}
+        />
 
-          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Link href="/forgotpassword" variant="body2">
+        <FormControlLabel
+          control={<Checkbox name="remember" value="yes" color="primary" />}
+          label="Lembrar-me"
+        />
+
+        <SubmitButton />
+
+        <Grid container sx={{ mt: 2 }}>
+          <Grid>
+            <Link href="/forgot-password" variant="body2">
               Esqueceu a senha?
             </Link>
-          </Box>
+          </Grid>
+        </Grid>
 
-          {state?.message && <FormError message={state.message} />}
-        </Box>
+        {state?.message && (
+          <Box mt={2}>
+            <FormError message={state.message} />
+          </Box>
+        )}
       </Box>
     </Paper>
   );

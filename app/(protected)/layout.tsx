@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: 'Protected Routes',
 };
 
-export default function ProtectedLayout({
+export default async function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;

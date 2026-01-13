@@ -1,12 +1,6 @@
-// import LoadingScreenCircular from "@/src/components/loading-screen/client/LoadingScreenCircular";
-// import dynamic from "next/dynamic";
-import PublicRetreatInfo from "@/src/components/public/retreats/PublicRetreatInfo";
-import React from "react";
+import React from 'react';
 
-// const PublicRetreatInfo = dynamic(
-//   () => import("@/src/components/public/retreats/PublicRetreatInfo"),
-//   { loading: () => <LoadingScreenCircular /> }
-// );
+import PublicRetreatInfoServer from '@/src/components/public/retreats/PublicRetreatInfoServer';
 
 export default async function Page({
   params,
@@ -14,5 +8,5 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <PublicRetreatInfo retreatId={id} />;
+  return <PublicRetreatInfoServer retreatId={id} />;
 }

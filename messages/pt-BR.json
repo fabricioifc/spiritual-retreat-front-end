@@ -27,7 +27,8 @@
     "No-contemplated": "Não Contemplados",
     "Contemplated": "Contemplados",
     "Service-unassigned": "Sem Equipe de Serviço",
-    "Service-confirmed": "Equipe de Serviço Confirmada"
+    "Service-confirmed": "Equipe de Serviço Confirmada",
+    "Generic": "Genérico"
   },
   "error": "Algo deu errado",
   "HomePage": {
@@ -56,6 +57,7 @@
   "status": "Status",
   "city": "Cidade",
   "filters": "Filtros",
+  "retreat": "Retiro",
   "retreats": "Retiros",
   "startDate": "Data de Início",
   "date": "Data",
@@ -749,7 +751,9 @@
     "no-error": "Nenhum erro registrado.",
     "history": "Histórico",
     "no-history": "Nenhum evento registrado.",
-    "close": "Fechar"
+    "close": "Fechar",
+    "withErrors": "Com Erros",
+    "oldest-pending": "Processamento mais velho pendente."
   },
   "region": "Região",
   "close": "Fechar",

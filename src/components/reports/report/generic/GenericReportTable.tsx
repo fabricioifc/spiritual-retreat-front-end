@@ -9,14 +9,12 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { Box, Button } from '@mui/material';
 
-import FilterButton from '@/src/components/filters/FilterButton';
 import { TanStackTable } from '@/src/components/table';
 import type { ExportHandler } from '@/src/components/table/exportHandlers';
 import { useUrlFilters } from '@/src/hooks/useUrlFilters';
 import apiClient from '@/src/lib/axiosClientInstance';
 
 import { ReportsAllFilters } from '../../types';
-import { getFilters } from '../getFilters';
 import {
   ColumnDescriptor,
   buildTanStackReportColumns,
@@ -95,7 +93,6 @@ const GenericReportTable = ({ reportId }: { reportId: string }) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const filtersConfig = getFilters();
 
   const handleRefresh = async () => {
     setLoading(true);
@@ -105,20 +102,15 @@ const GenericReportTable = ({ reportId }: { reportId: string }) => {
     setLoading(false);
   };
 
-  const { filters, updateFilters, activeFiltersCount, resetFilters } =
-    useUrlFilters<TableDefaultFilters<ReportsAllFilters>>({
-      defaultFilters: {
-        page: 1,
-        pageLimit: 10,
-      },
-      excludeFromCount: ['page', 'pageLimit', 'search'],
-    });
-
-  const handleApplyFilters = (
-    newFilters: Partial<TableDefaultFilters<ReportsAllFilters>>
-  ) => {
-    updateFilters({ ...filters, ...newFilters });
-  };
+  const { filters, updateFilters } = useUrlFilters<
+    TableDefaultFilters<ReportsAllFilters>
+  >({
+    defaultFilters: {
+      page: 1,
+      pageLimit: 10,
+    },
+    excludeFromCount: ['page', 'pageLimit', 'search'],
+  });
 
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['reports', reportId, filters],
@@ -174,7 +166,6 @@ const GenericReportTable = ({ reportId }: { reportId: string }) => {
     extensions: ['csv', 'pdf'] as ('csv' | 'pdf')[],
     handlers: exportHandlers,
   };
-
   return (
     <Box
       sx={{
@@ -212,23 +203,6 @@ const GenericReportTable = ({ reportId }: { reportId: string }) => {
             {loading ? 'Carregando...' : 'Atualizar Dados'}
           </Button>
         </Box>
-
-        <Box
-          sx={{
-            flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 4px)', md: '1 1 auto' },
-            minWidth: { xs: 0, md: 150 },
-            maxWidth: { md: 150 },
-          }}
-        >
-          <FilterButton<TableDefaultFilters<ReportsAllFilters>>
-            filters={filtersConfig}
-            defaultValues={filters}
-            onApplyFilters={handleApplyFilters}
-            onReset={resetFilters}
-            activeFiltersCount={activeFiltersCount}
-            fullWidth
-          />
-        </Box>
       </Box>
 
       <Box sx={{ flexGrow: 1, height: 'calc(100% - 40px)' }}>
@@ -238,6 +212,7 @@ const GenericReportTable = ({ reportId }: { reportId: string }) => {
           loading={isLoading || loading}
           enablePagination
           manualPagination
+          totalItems={reportData?.total || 0}
           pageSize={filters.pageLimit || 50}
           pageCount={
             reportData?.total

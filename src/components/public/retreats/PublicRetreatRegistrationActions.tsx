@@ -1,7 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+
+import { useRouter } from 'next/navigation';
+
 import {
   Box,
   Button,
@@ -12,23 +14,25 @@ import {
   DialogTitle,
   FormControlLabel,
   Typography,
-} from "@mui/material";
+} from '@mui/material';
 
 interface PublicRetreatRegistrationActionsProps {
   retreatId: string;
+  registrationDisabled?: boolean;
 }
 
 export function PublicRetreatRegistrationActions({
   retreatId,
+  registrationDisabled = false,
 }: PublicRetreatRegistrationActionsProps) {
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<
-    "participate" | "serve" | null
+    'participate' | 'serve' | null
   >(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  const openDialog = (action: "participate" | "serve") => {
+  const openDialog = (action: 'participate' | 'serve') => {
     setAcceptedTerms(false);
     setSelectedAction(action);
     setIsDialogOpen(true);
@@ -45,7 +49,7 @@ export function PublicRetreatRegistrationActions({
     }
     setIsDialogOpen(false);
     const destination =
-      selectedAction === "participate"
+      selectedAction === 'participate'
         ? `/public/retreats/${retreatId}/register/participate`
         : `/public/retreats/${retreatId}/register/serve`;
     router.push(destination);
@@ -53,12 +57,13 @@ export function PublicRetreatRegistrationActions({
 
   return (
     <>
-      <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
         <Button
           type="button"
           variant="contained"
           color="primary"
-          onClick={() => openDialog("participate")}
+          onClick={() => openDialog('participate')}
+          disabled={registrationDisabled}
         >
           Preencher Inscrição Participar
         </Button>
@@ -66,7 +71,8 @@ export function PublicRetreatRegistrationActions({
           type="button"
           variant="contained"
           color="primary"
-          onClick={() => openDialog("serve")}
+          onClick={() => openDialog('serve')}
+          disabled={registrationDisabled}
         >
           Preencher Inscrição Servir
         </Button>
@@ -75,7 +81,7 @@ export function PublicRetreatRegistrationActions({
       <Dialog open={isDialogOpen} onClose={closeDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Aviso antes de continuar</DialogTitle>
         <DialogContent
-          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
         >
           <Typography variant="body1">
             Inscrições com o mesmo CPF não serão aceitas. Verifique se você já
