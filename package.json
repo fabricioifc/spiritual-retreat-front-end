@@ -22,6 +22,7 @@
     "test:coverage": "vitest run --coverage",
     "lighthouse": "lhci autorun --config=lighthouse-config.json"
   },
+  "license": "PolyForm-Noncommercial-1.0.0",
   "dependencies": {
     "@auth/unstorage-adapter": "^2.10.0",
     "@dnd-kit/core": "^6.3.1",
