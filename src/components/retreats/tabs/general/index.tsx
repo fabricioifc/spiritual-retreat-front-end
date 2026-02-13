@@ -25,13 +25,22 @@ import {
   createRetreat,
   updateRetreat,
   deleteRetreat,
+  deleteRetreatImage,
+  reorderRetreatImages,
+  uploadRetreatImage,
 } from "@/src/components/retreats/shared";
+import SingleImageUpload from "@/src/components/fields/ImageUpload/SingleImageUpload";
+import SortableMultiImageUpload, {
+  SortableGalleryImageItem,
+} from "@/src/components/fields/ImageUpload/SortableMultiImageUpload";
 
 const retreatGeneralSchema = z
   .object({
     name: z.string().trim().min(1, "O título é obrigatório"),
     edition: z.string().trim().min(1, "Informe a edição"),
     theme: z.string().trim().min(1, "Informe o tema"),
+    shortDescription: z.string().optional(),
+    longDescription: z.string().optional(),
     startDate: z.string().min(1, "Informe a data de início"),
     endDate: z.string().min(1, "Informe a data de fim"),
     registrationStart: z.string().min(1, "Informe o início das inscrições"),
@@ -51,7 +60,8 @@ const retreatGeneralSchema = z
     stateShort: z.string().optional(),
     city: z.string().optional(),
     location: z.string().optional(),
-    description: z.string().optional(),
+    contactEmail: z.string().optional(),
+    contactPhone: z.string().optional(),
     instructor: z.string().optional(),
   })
   .superRefine((data, ctx) => {
@@ -82,6 +92,8 @@ const defaultFormValues: RetreatGeneralFormValues = {
   name: "",
   edition: "1",
   theme: "",
+  shortDescription: "",
+  longDescription: "",
   startDate: "",
   endDate: "",
   registrationStart: "",
@@ -95,7 +107,8 @@ const defaultFormValues: RetreatGeneralFormValues = {
   stateShort: "",
   city: "",
   location: "",
-  description: "",
+  contactEmail: "",
+  contactPhone: "",
   instructor: "",
 };
 
@@ -149,12 +162,21 @@ const mapRetreatToFormValues = (
       ? String(retreat.edition)
       : defaultFormValues.edition,
   theme: retreat.theme ?? defaultFormValues.theme,
+  shortDescription:
+    retreat.shortDescription ?? defaultFormValues.shortDescription,
+  longDescription: retreat.longDescription ?? defaultFormValues.longDescription,
   startDate: normalizeDateInput(retreat.startDate),
   endDate: normalizeDateInput(retreat.endDate),
   registrationStart: normalizeDateInput(retreat.registrationStart),
   registrationEnd: normalizeDateInput(retreat.registrationEnd),
-  feeFazer: extractNumericValue(retreat.feeFazer),
-  feeServir: extractNumericValue(retreat.feeServir),
+  feeFazer:
+    typeof retreat.feeFazerAmount === "number"
+      ? retreat.feeFazerAmount
+      : extractNumericValue(retreat.feeFazer),
+  feeServir:
+    typeof retreat.feeServirAmount === "number"
+      ? retreat.feeServirAmount
+      : extractNumericValue(retreat.feeServir),
   maleSlots:
     typeof retreat.maleSlots === "number"
       ? retreat.maleSlots
@@ -167,10 +189,119 @@ const mapRetreatToFormValues = (
   otherRegionPct: extractNumericValue(retreat.otherRegionPct),
   stateShort: retreat.stateShort ?? defaultFormValues.stateShort,
   city: retreat.city ?? defaultFormValues.city,
-  description: retreat.description ?? defaultFormValues.description,
   location: retreat.location ?? defaultFormValues.location,
+  contactEmail: retreat.contactEmail ?? defaultFormValues.contactEmail,
+  contactPhone: retreat.contactPhone ?? defaultFormValues.contactPhone,
   instructor: retreat.instructor ?? defaultFormValues.instructor,
 });
+
+type RetreatImagePayload = string | {
+  storageId?: string;
+  storageKey?: string;
+  id?: string | number;
+  imageUrl?: string;
+  url?: string;
+  type?: string;
+  order?: number;
+  title?: string;
+  altText?: string;
+};
+
+type ExistingServerImage = {
+  id: string;
+  storageId?: string;
+  url: string;
+  title?: string;
+};
+
+const normalizeServerImageType = (type?: string): "Banner" | "Thumbnail" | "Gallery" => {
+  const normalized = (type ?? "").toLowerCase();
+  if (normalized === "banner") return "Banner";
+  if (normalized === "thumbnail") return "Thumbnail";
+  return "Gallery";
+};
+
+const parseRetreatImages = (
+  rawImages: RetreatImagePayload[] | undefined
+): {
+  banner: ExistingServerImage | null;
+  thumbnail: ExistingServerImage | null;
+  gallery: SortableGalleryImageItem[];
+} => {
+  if (!Array.isArray(rawImages) || rawImages.length === 0) {
+    return { banner: null, thumbnail: null, gallery: [] };
+  }
+
+  let banner: ExistingServerImage | null = null;
+  let thumbnail: ExistingServerImage | null = null;
+  const gallery: SortableGalleryImageItem[] = [];
+
+  const mapped = rawImages
+    .map((raw, index) => {
+      if (typeof raw === "string") {
+        return {
+          id: `legacy-${index}`,
+          storageId: undefined,
+          url: raw,
+          title: undefined,
+          type: "Gallery" as const,
+          order: index,
+        };
+      }
+
+      const url = raw.imageUrl ?? raw.url;
+      if (!url) return null;
+      const storageIdRaw = raw.storageId ?? raw.storageKey ?? raw.id;
+      const storageId =
+        storageIdRaw != null ? String(storageIdRaw) : undefined;
+      return {
+        id: storageId ?? `legacy-${index}`,
+        storageId,
+        url,
+        title: raw.title ?? raw.altText,
+        type: normalizeServerImageType(raw.type),
+        order: typeof raw.order === "number" ? raw.order : index,
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item != null);
+
+  for (const image of mapped) {
+    if (image.type === "Banner" && !banner) {
+      banner = {
+        id: image.id,
+        storageId: image.storageId,
+        url: image.url,
+        title: image.title,
+      };
+      continue;
+    }
+    if (image.type === "Thumbnail" && !thumbnail) {
+      thumbnail = {
+        id: image.id,
+        storageId: image.storageId,
+        url: image.url,
+        title: image.title,
+      };
+      continue;
+    }
+
+    gallery.push({
+      id: `gallery-${image.id}`,
+      source: "server",
+      storageId: image.storageId,
+      url: image.url,
+      title: image.title,
+    });
+  }
+
+  gallery.sort((a, b) => {
+    const aOrder = mapped.find((item) => `gallery-${item.id}` === a.id)?.order ?? 0;
+    const bOrder = mapped.find((item) => `gallery-${item.id}` === b.id)?.order ?? 0;
+    return aOrder - bOrder;
+  });
+
+  return { banner, thumbnail, gallery };
+};
 
 const RetreatEditPage = ({
   isCreating,
@@ -218,20 +349,34 @@ const RetreatEditPage = ({
     shouldUnregister: false,
   });
 
-  const [newImages, setNewImages] = useState<File[]>([]);
-  const [imagesToDelete, setImagesToDelete] = useState<(string | number)[]>([]);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [existingBanner, setExistingBanner] = useState<ExistingServerImage | null>(null);
+  const [existingThumbnail, setExistingThumbnail] = useState<ExistingServerImage | null>(null);
+  const [galleryImages, setGalleryImages] = useState<SortableGalleryImageItem[]>([]);
+  const [deletedServerImageIds, setDeletedServerImageIds] = useState<string[]>([]);
+  const [savingStatus, setSavingStatus] = useState<string | null>(null);
 
   const isReadOnly = menuMode === "view";
 
   useEffect(() => {
     if (retreatData) {
       reset(mapRetreatToFormValues(retreatData));
-      setImagesToDelete([]);
-      setNewImages([]);
+      const parsedImages = parseRetreatImages(retreatData.images);
+      setExistingBanner(parsedImages.banner);
+      setExistingThumbnail(parsedImages.thumbnail);
+      setGalleryImages(parsedImages.gallery);
+      setDeletedServerImageIds([]);
+      setBannerFile(null);
+      setThumbnailFile(null);
     } else if (isCreating) {
       reset(defaultFormValues);
-      setImagesToDelete([]);
-      setNewImages([]);
+      setExistingBanner(null);
+      setExistingThumbnail(null);
+      setGalleryImages([]);
+      setDeletedServerImageIds([]);
+      setBannerFile(null);
+      setThumbnailFile(null);
     }
   }, [retreatData, isCreating, reset]);
 
@@ -250,35 +395,6 @@ const RetreatEditPage = ({
   }, [retreatData, isCreating, setBreadCrumbsTitle]);
 
   const watchedName = watch("name");
-
-  // const existingImages = (() => {
-  //   const gallery = (
-  //     retreatData as Retreat & {
-  //       gallery?: Array<{ id: string | number; url: string; title?: string }>;
-  //     }
-  //   )?.gallery;
-
-  //   if (Array.isArray(gallery) && gallery.length > 0) {
-  //     return gallery
-  //       .filter((item) => !imagesToDelete.includes(item.id))
-  //       .map((item) => ({
-  //         id: item.id,
-  //         url: item.url,
-  //         title: item.title,
-  //       }));
-  //   }
-
-  //   if (retreatData && Array.isArray(retreatData.images)) {
-  //     return retreatData.images
-  //       .map((url: string, index: number) => ({ id: index, url }))
-  //       .filter(
-  //         (item: { id: number; url: string }) =>
-  //           !imagesToDelete.includes(item.id)
-  //       );
-  //   }
-
-  //   return [];
-  // })();
 
   const handleDelete = () => {
     if (!retreatData?.id) return;
@@ -321,29 +437,127 @@ const RetreatEditPage = ({
     });
   };
 
+  const addDeletedServerImageId = (storageId?: string) => {
+    if (!storageId) return;
+    setDeletedServerImageIds((prev) =>
+      prev.includes(storageId) ? prev : [...prev, storageId]
+    );
+  };
+
+  const syncRetreatImagesBatch = async (targetRetreatId: string) => {
+    const uniqueDeletedStorageIds = [...new Set(deletedServerImageIds)];
+
+    if (uniqueDeletedStorageIds.length > 0) {
+      setSavingStatus("removendo imagens");
+      await Promise.all(
+        uniqueDeletedStorageIds.map((storageId) =>
+          deleteRetreatImage(targetRetreatId, storageId)
+        )
+      );
+    }
+
+    const uploadedGalleryItems = new Map<string, string>();
+
+    if (bannerFile) {
+      setSavingStatus("enviando banner");
+      await uploadRetreatImage(targetRetreatId, {
+        file: bannerFile,
+        type: "Banner",
+        order: 0,
+      });
+    }
+
+    if (thumbnailFile) {
+      setSavingStatus("enviando thumbnail");
+      await uploadRetreatImage(targetRetreatId, {
+        file: thumbnailFile,
+        type: "Thumbnail",
+        order: 0,
+      });
+    }
+
+    const galleryCount = galleryImages.length;
+    const totalLocalGalleryImages = galleryImages.filter(
+      (image) => image.source === "local"
+    ).length;
+    let uploadedLocalImages = 0;
+
+    for (let index = 0; index < galleryCount; index += 1) {
+      const image = galleryImages[index];
+      if (image.source !== "local") continue;
+
+      uploadedLocalImages += 1;
+      setSavingStatus(
+        `enviando galeria (${uploadedLocalImages}/${totalLocalGalleryImages})`
+      );
+
+      const uploadResult = await uploadRetreatImage(targetRetreatId, {
+        file: image.file,
+        type: "Gallery",
+        order: index,
+        altText: image.title,
+      });
+
+      uploadedGalleryItems.set(image.id, uploadResult.storageKey);
+    }
+
+    const hasServerImageWithoutStorageId = galleryImages.some(
+      (image) => image.source === "server" && !image.storageId
+    );
+
+    if (hasServerImageWithoutStorageId) {
+      return;
+    }
+
+    const imageOrders = galleryImages
+      .map((image, index) => {
+        if (image.source === "server") {
+          return image.storageId
+            ? { storageId: image.storageId, newOrder: index }
+            : null;
+        }
+        const storageId = uploadedGalleryItems.get(image.id);
+        return storageId ? { storageId, newOrder: index } : null;
+      })
+      .filter(
+        (item): item is { storageId: string; newOrder: number } => item != null
+      );
+
+    if (imageOrders.length > 0) {
+      setSavingStatus("reordenando galeria");
+      await reorderRetreatImages(targetRetreatId, imageOrders);
+    }
+  };
+
   const onSubmit = handleSubmit(async (values) => {
     const payload = {
       ...values,
-      imagesToDelete,
     };
 
     // Salva os valores anteriores em caso de erro
     const previousFormValues = { ...values };
-    const previousImagesToDelete = [...imagesToDelete];
-    const previousNewImages = [...newImages];
+    const previousDeletedServerImageIds = [...deletedServerImageIds];
+    const previousGalleryImages = [...galleryImages];
+    const previousBannerFile = bannerFile;
+    const previousThumbnailFile = thumbnailFile;
+    const previousExistingBanner = existingBanner;
+    const previousExistingThumbnail = existingThumbnail;
 
     try {
+      let currentRetreatId: string | undefined;
+      setSavingStatus("salvando dados");
+
       if (isCreating) {
-        const data = await createRetreat(
-          payload,
-          newImages.length > 0 ? newImages : undefined
-        );
+        const data = await createRetreat(payload);
+        currentRetreatId = data.retreatId;
+        await syncRetreatImagesBatch(currentRetreatId);
         enqueueSnackbar("Retiro criado com sucesso!", {
           variant: "success",
         });
-        setImagesToDelete([]);
-        setNewImages([]);
-        router.push(`/retreats/${data.retreatId}`);
+        setDeletedServerImageIds([]);
+        setBannerFile(null);
+        setThumbnailFile(null);
+        router.push(`/retreats/${currentRetreatId}`);
         return;
       }
 
@@ -352,28 +566,31 @@ const RetreatEditPage = ({
       if (!idToUpdate) {
         throw new Error("ID do retiro não encontrado");
       }
+      currentRetreatId = idToUpdate;
 
-      await updateRetreat(
-        idToUpdate,
-        payload,
-        newImages.length > 0 ? newImages : undefined
-      );
+      await updateRetreat(idToUpdate, payload);
+      await syncRetreatImagesBatch(currentRetreatId);
 
       // Invalida a query para refetch dos dados atualizados
       await queryClient.invalidateQueries({
-        queryKey: ["retreats", idToUpdate],
+        queryKey: ["retreats", currentRetreatId],
       });
 
-      setImagesToDelete([]);
-      setNewImages([]);
+      setDeletedServerImageIds([]);
+      setBannerFile(null);
+      setThumbnailFile(null);
       enqueueSnackbar("Retiro atualizado com sucesso!", {
         variant: "success",
       });
     } catch (error: unknown) {
       // Em caso de erro, reseta para os valores anteriores
       reset(previousFormValues);
-      setImagesToDelete(previousImagesToDelete);
-      setNewImages(previousNewImages);
+      setDeletedServerImageIds(previousDeletedServerImageIds);
+      setGalleryImages(previousGalleryImages);
+      setBannerFile(previousBannerFile);
+      setThumbnailFile(previousThumbnailFile);
+      setExistingBanner(previousExistingBanner);
+      setExistingThumbnail(previousExistingThumbnail);
 
       const message =
         error instanceof Error
@@ -382,6 +599,8 @@ const RetreatEditPage = ({
       enqueueSnackbar(message, {
         variant: "error",
       });
+    } finally {
+      setSavingStatus(null);
     }
   });
 
@@ -457,6 +676,66 @@ const RetreatEditPage = ({
           />
         </Grid>
 
+        <Grid size={{ xs: 12 }}>
+          <TextField
+            fullWidth
+            label="Descrição curta"
+            multiline
+            minRows={2}
+            disabled={isReadOnly}
+            error={Boolean(errors.shortDescription)}
+            helperText={errors.shortDescription?.message}
+            {...register("shortDescription")}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <TextField
+            fullWidth
+            label="Descrição longa"
+            multiline
+            minRows={4}
+            disabled={isReadOnly}
+            error={Boolean(errors.longDescription)}
+            helperText={errors.longDescription?.message}
+            {...register("longDescription")}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <TextField
+            fullWidth
+            label="E-mail de contato"
+            type="email"
+            disabled={isReadOnly}
+            error={Boolean(errors.contactEmail)}
+            helperText={errors.contactEmail?.message}
+            {...register("contactEmail")}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Controller
+            control={control}
+            name="contactPhone"
+            render={({ field }) => (
+              <TextFieldMasked
+                maskType="phone"
+                fullWidth
+                label="Telefone de contato"
+                disabled={isReadOnly}
+                error={Boolean(errors.contactPhone)}
+                helperText={errors.contactPhone?.message}
+                value={field.value ?? ""}
+                name={field.name}
+                inputRef={field.ref}
+                onBlur={field.onBlur}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
+            )}
+          />
+        </Grid>
+
         {/* <Grid size={{ xs: 12 }}>
           <LocationField
             selectedState={watchedState ?? ""}
@@ -483,22 +762,68 @@ const RetreatEditPage = ({
           />
         </Grid> */}
 
-        {/* <Grid size={{ xs: 12 }}>
-          <MultiImageUpload
-            label="Imagens do retiro"
-            existing={existingImages}
-            onRemoveExisting={(id) =>
-              setImagesToDelete((prev) =>
-                prev.includes(id) ? prev : [...prev, id]
-              )
+        <Grid size={{ xs: 12, md: 6 }}>
+          <SingleImageUpload
+            label="Banner"
+            value={bannerFile}
+            existing={
+              existingBanner
+                ? {
+                    id: existingBanner.id,
+                    url: existingBanner.url,
+                    title: existingBanner.title,
+                  }
+                : undefined
             }
-            value={newImages}
-            onChange={setNewImages}
-            maxFiles={12}
-            maxSizeMB={8}
+            onChange={setBannerFile}
+            onRemoveExisting={(id) => {
+              addDeletedServerImageId(existingBanner?.storageId ?? String(id));
+              setExistingBanner(null);
+            }}
+            maxSizeMB={5}
             disabled={isReadOnly}
+            helperText="JPG/PNG até 5MB. Substitui automaticamente no servidor."
           />
-        </Grid> */}
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <SingleImageUpload
+            label="Thumbnail"
+            value={thumbnailFile}
+            existing={
+              existingThumbnail
+                ? {
+                    id: existingThumbnail.id,
+                    url: existingThumbnail.url,
+                    title: existingThumbnail.title,
+                  }
+                : undefined
+            }
+            onChange={setThumbnailFile}
+            onRemoveExisting={(id) => {
+              addDeletedServerImageId(existingThumbnail?.storageId ?? String(id));
+              setExistingThumbnail(null);
+            }}
+            maxSizeMB={5}
+            disabled={isReadOnly}
+            helperText="JPG/PNG até 5MB. Substitui automaticamente no servidor."
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <SortableMultiImageUpload
+            label="Galeria de imagens"
+            value={galleryImages}
+            onChange={setGalleryImages}
+            onRemoveServerImage={(image) => {
+              addDeletedServerImageId(image.storageId);
+            }}
+            maxFiles={20}
+            maxSizeMB={5}
+            disabled={isReadOnly}
+            helperText="Você pode ordenar antes de salvar. O envio é feito em lote ao clicar em salvar."
+          />
+        </Grid>
 
         <Grid size={{ xs: 12, md: 6 }}>
           <TextField
@@ -709,11 +1034,19 @@ const RetreatEditPage = ({
                   onClick={() => {
                     if (retreatData) {
                       reset(mapRetreatToFormValues(retreatData));
+                      const parsedImages = parseRetreatImages(retreatData.images);
+                      setExistingBanner(parsedImages.banner);
+                      setExistingThumbnail(parsedImages.thumbnail);
+                      setGalleryImages(parsedImages.gallery);
                     } else {
                       reset(defaultFormValues);
+                      setExistingBanner(null);
+                      setExistingThumbnail(null);
+                      setGalleryImages([]);
                     }
-                    setImagesToDelete([]);
-                    setNewImages([]);
+                    setDeletedServerImageIds([]);
+                    setBannerFile(null);
+                    setThumbnailFile(null);
                   }}
                   disabled={isSubmitting || isReadOnly}
                 >
@@ -727,7 +1060,7 @@ const RetreatEditPage = ({
               disabled={isSubmitting || isReadOnly}
             >
               {isSubmitting
-                ? "Salvando..."
+                ? `Salvando${savingStatus ? ` (${savingStatus})` : ""}...`
                 : isCreating
                   ? "Salvar Retiro"
                   : "Salvar Alterações"}

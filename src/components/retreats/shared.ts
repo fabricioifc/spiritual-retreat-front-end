@@ -10,6 +10,8 @@ type RetreatPayload = {
   name: string;
   edition: string;
   theme: string;
+  shortDescription?: string;
+  longDescription?: string;
   startDate: string;
   endDate: string;
   registrationStart: string;
@@ -19,7 +21,8 @@ type RetreatPayload = {
   stateShort?: string;
   city?: string;
   location?: string;
-  description?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   instructor?: string;
   capacity?: number;
   maleSlots?: number;
@@ -27,6 +30,25 @@ type RetreatPayload = {
   westRegionPct?: number;
   otherRegionPct?: number;
   imagesToDelete?: (string | number)[];
+};
+
+export type RetreatImageType = 'Banner' | 'Thumbnail' | 'Gallery';
+
+export type UploadRetreatImagePayload = {
+  file: File;
+  type: RetreatImageType;
+  altText?: string;
+  order?: number;
+};
+
+export type UploadRetreatImageResponse = {
+  retreatId: string;
+  storageKey: string;
+  imageUrl: string;
+  type: RetreatImageType;
+  order: number;
+  uploadedAt: string;
+  replacedExisting: boolean;
 };
 
 export const fetchRetreatData = async (
@@ -78,19 +100,22 @@ export const fetchRetreatDataServer = async (
 };
 
 const buildRetreatPayload = (data: RetreatPayload) => {
-  return {
+  const payload: Record<string, unknown> = {
     id: data.id,
-    name: {
-      value: data.name,
-    },
+    name: { value: data.name },
     edition: data.edition,
     theme: data.theme,
+    shortDescription: data.shortDescription,
+    longDescription: data.longDescription,
     startDate: data.startDate,
     endDate: data.endDate,
     maleSlots: data.maleSlots ?? 60,
     femaleSlots: data.femaleSlots ?? 60,
     registrationStart: data.registrationStart,
     registrationEnd: data.registrationEnd,
+    location: data.location,
+    contactEmail: data.contactEmail,
+    contactPhone: data.contactPhone,
     feeFazer: {
       amount: typeof data.feeFazer === 'number' ? data.feeFazer : 0,
       currency: 'BRL',
@@ -99,14 +124,19 @@ const buildRetreatPayload = (data: RetreatPayload) => {
       amount: typeof data.feeServir === 'number' ? data.feeServir : 0,
       currency: 'BRL',
     },
-    westRegionPct: {
-      value: typeof data.westRegionPct === 'number' ? data.westRegionPct : 85.0,
-    },
-    otherRegionPct: {
-      value:
-        typeof data.otherRegionPct === 'number' ? data.otherRegionPct : 15.0,
-    },
+    westRegionPct:
+      typeof data.westRegionPct === 'number'
+        ? { value: data.westRegionPct }
+        : { value: 85.0 },
+    otherRegionPct:
+      typeof data.otherRegionPct === 'number'
+        ? { value: data.otherRegionPct }
+        : { value: 15.0 },
   };
+  if (data.imagesToDelete && data.imagesToDelete.length > 0) {
+    payload.imagesToDelete = data.imagesToDelete;
+  }
+  return payload;
 };
 
 export const createRetreat = async (
@@ -187,6 +217,62 @@ export const deleteRetreat = async (retreatId: string): Promise<void> => {
     const message = axios.isAxiosError(error)
       ? ((error.response?.data as { error?: string })?.error ?? error.message)
       : 'Erro ao excluir retiro. Tente novamente.';
+    throw new Error(message);
+  }
+};
+
+export const uploadRetreatImage = async (
+  retreatId: string,
+  payload: UploadRetreatImagePayload
+): Promise<UploadRetreatImageResponse> => {
+  try {
+    const body = new FormData();
+    body.append('File', payload.file);
+    body.append('Type', payload.type);
+    if (payload.altText) body.append('AltText', payload.altText);
+    if (typeof payload.order === 'number') {
+      body.append('Order', String(payload.order));
+    }
+
+    const response = await apiClient.post<UploadRetreatImageResponse>(
+      `/Retreats/${retreatId}/images`,
+      body
+    );
+    return response.data;
+  } catch (error) {
+    const message = axios.isAxiosError(error)
+      ? ((error.response?.data as { error?: string })?.error ?? error.message)
+      : 'Erro ao enviar imagem do retiro. Tente novamente.';
+    throw new Error(message);
+  }
+};
+
+export const deleteRetreatImage = async (
+  retreatId: string,
+  storageId: string
+): Promise<void> => {
+  try {
+    await apiClient.delete(`/Retreats/${retreatId}/images/${storageId}`);
+  } catch (error) {
+    const message = axios.isAxiosError(error)
+      ? ((error.response?.data as { error?: string })?.error ?? error.message)
+      : 'Erro ao remover imagem do retiro. Tente novamente.';
+    throw new Error(message);
+  }
+};
+
+export const reorderRetreatImages = async (
+  retreatId: string,
+  imageOrders: { storageId: string; newOrder: number }[]
+): Promise<void> => {
+  try {
+    await apiClient.put(`/Retreats/${retreatId}/images/reorder`, {
+      imageOrders,
+    });
+  } catch (error) {
+    const message = axios.isAxiosError(error)
+      ? ((error.response?.data as { error?: string })?.error ?? error.message)
+      : 'Erro ao reordenar imagens do retiro. Tente novamente.';
     throw new Error(message);
   }
 };
