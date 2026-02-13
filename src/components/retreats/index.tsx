@@ -1,27 +1,31 @@
-"use client";
-import { Button, Container, Typography } from "@mui/material";
-import RetreatsCardTable from "./CardTable/RetreatsCardTable";
+'use client';
+import { useEffect, useState } from 'react';
 
-import { useQuery } from "@tanstack/react-query";
-import { Box, Stack } from "@mui/material";
-import { useTranslations } from "next-intl";
-import { useUrlFilters } from "@/src/hooks/useUrlFilters";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import getPermission from "@/src/utils/getPermission";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+import { useQuery } from '@tanstack/react-query';
+
+import { Button, Container, Typography } from '@mui/material';
+import { Box, Stack } from '@mui/material';
+
+//import { Retreat } from "@/src/types/retreats";
+import { useModal } from '@/src/hooks/useModal';
+import { useUrlFilters } from '@/src/hooks/useUrlFilters';
+import apiClient from '@/src/lib/axiosClientInstance';
+import getPermission from '@/src/utils/getPermission';
+
+import { keysToRemoveFromFilters } from '../table/shared';
+import RetreatOverview from './CardTable/RetreatOverview';
+import RetreatsCardTable from './CardTable/RetreatsCardTable';
 import {
-  RetreatsCardTableDateFilters,
-  RetreatsCardTableFilters,
   RetreatSimple,
   RetreatSimpleRequest,
-} from "./types";
-//import { Retreat } from "@/src/types/retreats";
-import { useModal } from "@/src/hooks/useModal";
-import RetreatOverview from "./CardTable/RetreatOverview";
-import apiClient from "@/src/lib/axiosClientInstance";
-import { keysToRemoveFromFilters } from "../table/shared";
+  RetreatsCardTableDateFilters,
+  RetreatsCardTableFilters,
+} from './types';
 
 const getRetreats = async (
   filters: TableDefaultFilters<
@@ -37,18 +41,18 @@ const getRetreats = async (
       (key) => delete filters[key]
     );
     const params: Record<string, unknown> = {
-      status: 1,
+      // status: 1,
       skip,
       take: pageLimit,
       filtersFiltered,
     };
-    const response = await apiClient.get<RetreatSimpleRequest>("/Retreats", {
+    const response = await apiClient.get<RetreatSimpleRequest>('/Retreats', {
       params,
     });
 
     return response.data;
   } catch (err) {
-    console.error("getRetreats: ", err);
+    console.error('getRetreats: ', err);
     throw err;
   }
 };
@@ -64,7 +68,7 @@ export default function RetreatsTablePage() {
       page: 1,
       pageLimit: 4,
     },
-    excludeFromCount: ["page", "pageLimit"], // Don't count pagination in active filters
+    excludeFromCount: ['page', 'pageLimit'], // Don't count pagination in active filters
   });
 
   const { data: sessionData } = useSession();
@@ -75,7 +79,7 @@ export default function RetreatsTablePage() {
       setHasCreatePermission(
         getPermission({
           permissions: sessionData.user.permissions,
-          permission: "users.create",
+          permission: 'users.create',
           role: sessionData.user.role,
         })
       );
@@ -87,7 +91,7 @@ export default function RetreatsTablePage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["retreats", filters],
+    queryKey: ['retreats', filters],
     queryFn: () => getRetreats(filters),
     staleTime: 5 * 60 * 1000,
   });
@@ -98,8 +102,8 @@ export default function RetreatsTablePage() {
 
   const handleView = (retreatId: string) => {
     modal.open({
-      title: t("overview"),
-      size: "lg",
+      title: t('overview'),
+      size: 'lg',
       customRender() {
         return <RetreatOverview retreatId={retreatId} />;
       },
@@ -121,10 +125,10 @@ export default function RetreatsTablePage() {
   return (
     <Container
       maxWidth="xl"
-      sx={{ py: 4, height: "100%", display: "flex", flexDirection: "column" }}
+      sx={{ py: 4, height: '100%', display: 'flex', flexDirection: 'column' }}
     >
       <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-        <Typography variant="h5">{t("retreats")}</Typography>
+        <Typography variant="h5">{t('retreats')}</Typography>
         {/* <FilterButton<
           TableDefaultFilters<RetreatsCardTableFilters>,
           RetreatsCardTableDateFilters
@@ -137,7 +141,7 @@ export default function RetreatsTablePage() {
         /> */}
         {hasCreatePermission && (
           <Button variant="contained">
-            <Link href={{ pathname: "/retreats/create" }}>
+            <Link href={{ pathname: '/retreats/create' }}>
               Criar Novo Retiro
             </Link>
           </Button>
