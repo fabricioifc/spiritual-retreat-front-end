@@ -16,7 +16,8 @@ export async function refresh(tokens: {
   accessToken: string;
   refreshToken: string;
 }): Promise<BackendAccessJWT> {
-  console.warn('Refreshing token', {
+  console.warn('[auth][refresh] request started', {
+    endpoint: REFRESH_ENDPOINT,
     hasAccessToken: Boolean(tokens.accessToken),
     hasRefreshToken: Boolean(tokens.refreshToken),
   });
@@ -45,7 +46,11 @@ export async function refresh(tokens: {
     const rawPayload = await response
       .json()
       .catch(() => ({ error: 'Unable to parse refresh response' }));
-    console.log(rawPayload, 'rawPayload');
+    console.warn('[auth][refresh] response received', {
+      status: response.status,
+      ok: response.ok,
+      payload: rawPayload,
+    });
     if (!response.ok) {
       throw Object.assign(
         new Error(
@@ -74,7 +79,10 @@ export async function refresh(tokens: {
       refreshToken: data.refreshToken ?? tokens.refreshToken,
     };
   } catch (err) {
-    console.error(`Refresh token request failed:`, err);
+    console.error('[auth][refresh] request failed', {
+      endpoint: REFRESH_ENDPOINT,
+      error: err,
+    });
     throw err;
   }
 }
