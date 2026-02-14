@@ -1,21 +1,22 @@
-"use client";
+'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Accept, useDropzone } from 'react-dropzone';
+
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import ImageRoundedIcon from '@mui/icons-material/ImageRounded';
+import UploadRoundedIcon from '@mui/icons-material/UploadRounded';
+import ZoomOutMapRoundedIcon from '@mui/icons-material/ZoomOutMapRounded';
 import {
-  Box,
-  Stack,
-  Typography,
-  Button,
-  IconButton,
-  Tooltip,
-  Chip,
   Avatar,
-} from "@mui/material";
-import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
-import UploadRoundedIcon from "@mui/icons-material/UploadRounded";
-import ZoomOutMapRoundedIcon from "@mui/icons-material/ZoomOutMapRounded";
-import ImageRoundedIcon from "@mui/icons-material/ImageRounded";
-import { useDropzone, Accept } from "react-dropzone";
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 
 export interface ExistingImage {
   id?: string | number;
@@ -34,22 +35,22 @@ export interface SingleImageUploadProps {
   disabled?: boolean;
   errorText?: string;
   helperText?: string;
-  variant?: "standard" | "avatar"; // tipo de visualização
+  variant?: 'standard' | 'avatar'; // tipo de visualização
   size?: number; // tamanho para variant avatar
 }
 
 export default function SingleImageUpload({
-  label = "Adicionar imagem",
+  label = 'Adicionar imagem',
   value,
   onChange,
   existing,
   onRemoveExisting,
-  accept = { "image/*": [] },
+  accept = { 'image/*': [] },
   maxSizeMB = 5,
   disabled,
   errorText,
   helperText,
-  variant = "standard",
+  variant = 'standard',
   size = 120,
 }: SingleImageUploadProps) {
   const [file, setFile] = useState<File | null>(value ?? null);
@@ -129,7 +130,7 @@ export default function SingleImageUpload({
   const hasImage = Boolean(currentImageUrl);
 
   // Variant Avatar
-  if (variant === "avatar") {
+  if (variant === 'avatar') {
     return (
       <Stack spacing={1.25} alignItems="center">
         <Typography variant="subtitle2">{label}</Typography>
@@ -147,8 +148,8 @@ export default function SingleImageUpload({
         <Box
           {...getRootProps()}
           sx={{
-            position: "relative",
-            cursor: disabled ? "not-allowed" : "pointer",
+            position: 'relative',
+            cursor: disabled ? 'not-allowed' : 'pointer',
           }}
         >
           <input {...getInputProps()} />
@@ -157,17 +158,17 @@ export default function SingleImageUpload({
             sx={{
               width: size,
               height: size,
-              border: "2px dashed",
+              border: '2px dashed',
               borderColor: errorText
-                ? "error.main"
+                ? 'error.main'
                 : isDragActive
-                  ? "primary.main"
-                  : "divider",
+                  ? 'primary.main'
+                  : 'divider',
               bgcolor: (theme) =>
                 isDragActive
                   ? theme.vars?.palette.action.hover
                   : theme.vars?.palette.background.default,
-              transition: "all .15s ease",
+              transition: 'all .15s ease',
             }}
           >
             {!hasImage && <ImageRoundedIcon sx={{ fontSize: size * 0.4 }} />}
@@ -176,10 +177,10 @@ export default function SingleImageUpload({
           {hasImage && (
             <Box
               sx={{
-                position: "absolute",
+                position: 'absolute',
                 top: -8,
                 right: -8,
-                display: "flex",
+                display: 'flex',
                 gap: 0.5,
               }}
             >
@@ -192,9 +193,9 @@ export default function SingleImageUpload({
                     target="_blank"
                     rel="noreferrer"
                     sx={{
-                      bgcolor: "background.paper",
+                      bgcolor: 'background.paper',
                       boxShadow: 1,
-                      "&:hover": { bgcolor: "background.paper" },
+                      '&:hover': { bgcolor: 'background.paper' },
                     }}
                   >
                     <ZoomOutMapRoundedIcon fontSize="small" />
@@ -206,9 +207,9 @@ export default function SingleImageUpload({
                   size="small"
                   onClick={previewUrl ? handleRemove : handleRemoveExisting}
                   sx={{
-                    bgcolor: "background.paper",
+                    bgcolor: 'background.paper',
                     boxShadow: 1,
-                    "&:hover": { bgcolor: "background.paper" },
+                    '&:hover': { bgcolor: 'background.paper' },
                   }}
                 >
                   <DeleteOutlineRoundedIcon fontSize="small" />
@@ -226,7 +227,7 @@ export default function SingleImageUpload({
             onClick={open}
             disabled={disabled}
           >
-            {hasImage ? "Alterar" : "Selecionar"}
+            {hasImage ? 'Alterar' : 'Selecionar'}
           </Button>
           {hasImage && (
             <Button
@@ -278,7 +279,7 @@ export default function SingleImageUpload({
             onClick={open}
             disabled={disabled}
           >
-            {hasImage ? "Alterar" : "Selecionar"}
+            {hasImage ? 'Alterar' : 'Selecionar'}
           </Button>
           {hasImage && (
             <Tooltip title="Remover">
@@ -306,47 +307,47 @@ export default function SingleImageUpload({
         {...getRootProps()}
         sx={{
           p: 2,
-          border: "1px dashed",
+          border: '1px dashed',
           borderColor: errorText
-            ? "error.main"
+            ? 'error.main'
             : isDragActive
-              ? "primary.main"
-              : "divider",
+              ? 'primary.main'
+              : 'divider',
           bgcolor: (theme) =>
             isDragActive
               ? theme.vars?.palette.action.hover
               : theme.vars?.palette.background.default,
           borderRadius: 2,
-          outline: "none",
-          transition: "all .15s ease",
-          cursor: disabled ? "not-allowed" : "pointer",
-          minHeight: hasImage ? "auto" : 120,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          outline: 'none',
+          transition: 'all .15s ease',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          minHeight: hasImage ? 'auto' : 120,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <input {...getInputProps()} />
 
         {hasImage ? (
-          <Box sx={{ position: "relative", width: "100%", maxWidth: 300 }}>
+          <Box sx={{ position: 'relative', width: '100%', maxWidth: 300 }}>
             <img
               src={currentImageUrl}
-              alt={file?.name || existing?.title || "Imagem"}
+              alt={file?.name || existing?.title || 'Imagem'}
               style={{
-                width: "100%",
-                height: "auto",
+                width: '100%',
+                height: 'auto',
                 maxHeight: 200,
-                objectFit: "cover",
+                objectFit: 'cover',
                 borderRadius: 8,
               }}
             />
             <Box
               sx={{
-                position: "absolute",
+                position: 'absolute',
                 top: 8,
                 right: 8,
-                display: "flex",
+                display: 'flex',
                 gap: 0.5,
               }}
             >
@@ -359,9 +360,9 @@ export default function SingleImageUpload({
                     target="_blank"
                     rel="noreferrer"
                     sx={{
-                      bgcolor: "rgba(0,0,0,0.7)",
-                      color: "white",
-                      "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
+                      bgcolor: 'rgba(0,0,0,0.7)',
+                      color: 'white',
+                      '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
                     }}
                   >
                     <ZoomOutMapRoundedIcon fontSize="small" />
@@ -373,11 +374,11 @@ export default function SingleImageUpload({
               <Typography
                 variant="caption"
                 sx={{
-                  position: "absolute",
+                  position: 'absolute',
                   bottom: 8,
                   left: 8,
-                  bgcolor: "rgba(0,0,0,0.7)",
-                  color: "white",
+                  bgcolor: 'rgba(0,0,0,0.7)',
+                  color: 'white',
                   px: 1,
                   py: 0.5,
                   borderRadius: 1,
@@ -389,14 +390,14 @@ export default function SingleImageUpload({
           </Box>
         ) : (
           <Stack spacing={1} alignItems="center">
-            <ImageRoundedIcon sx={{ fontSize: 48, color: "text.secondary" }} />
+            <ImageRoundedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
             <Typography
               variant="body2"
               color="text.secondary"
               textAlign="center"
             >
               Arraste e solte uma imagem aqui ou clique em
-              &quotSelecionar&quot;.
+              &quot;Selecionar&quot;.
             </Typography>
             <Typography
               variant="caption"
