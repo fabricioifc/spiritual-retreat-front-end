@@ -1,23 +1,45 @@
-import { Active, Over, UniqueIdentifier } from "@dnd-kit/core";
-import { Items, MemberToContainer } from "./types";
-import { arrayMove } from "@dnd-kit/sortable";
-import { unstable_batchedUpdates } from "react-dom";
+import { unstable_batchedUpdates } from 'react-dom';
 
-export const TRASH_ID = "void";
-export const PLACEHOLDER_ID = "placeholder";
+import { Items, MemberToContainer } from './types';
 
-// Assinaturas agora aceitam mapas para atualizar em O(1)
+type UniqueIdentifier = string | number;
+
+const arrayMove = <T>(array: T[], from: number, to: number): T[] => {
+  const next = array.slice();
+  if (from < 0 || from >= next.length || next.length === 0) {
+    return next;
+  }
+  const clampedTo = Math.max(0, Math.min(to, next.length - 1));
+  if (from === clampedTo) return next;
+  const [item] = next.splice(from, 1);
+  next.splice(clampedTo, 0, item);
+  return next;
+};
+
+export const TRASH_ID = 'void';
+export const PLACEHOLDER_ID = 'placeholder';
+
+/** Source/target shape for @dnd-kit/react events (operation.source, operation.target) */
+export interface DragSource {
+  id: UniqueIdentifier;
+}
+export interface DragTarget {
+  id: UniqueIdentifier;
+}
+
 interface onDragOverProps {
-  active: Active;
-  over: Over | null;
+  source: DragSource;
+  target: DragTarget | null;
   items: Items;
   setItems: React.Dispatch<React.SetStateAction<Items>>;
   recentlyMovedToNewContainer: React.RefObject<boolean>;
   memberToContainer: MemberToContainer;
   setMemberToContainer: React.Dispatch<React.SetStateAction<MemberToContainer>>;
+  /** Optional: whether pointer is below the target item (insert after) */
+  isBelowOverItem?: boolean;
 }
 
-type onDragEndProps = Omit<onDragOverProps, "recentlyMovedToNewContainer"> & {
+type onDragEndProps = Omit<onDragOverProps, 'recentlyMovedToNewContainer'> & {
   setActiveId: React.Dispatch<React.SetStateAction<UniqueIdentifier | null>>;
   setContainers: React.Dispatch<React.SetStateAction<UniqueIdentifier[]>>;
   getNextContainerId: () => UniqueIdentifier;
@@ -25,43 +47,61 @@ type onDragEndProps = Omit<onDragOverProps, "recentlyMovedToNewContainer"> & {
 };
 
 export function onDragOver({
-  active,
-  over,
+  source,
+  target,
   items,
   setItems,
   recentlyMovedToNewContainer,
   memberToContainer,
   setMemberToContainer,
+  isBelowOverItem = false,
 }: onDragOverProps) {
-  const overId = over?.id;
+  const overId = target?.id;
 
-  if (overId == null || overId === TRASH_ID || active.id in items) {
+  if (overId == null || overId === TRASH_ID || source.id in items) {
     return;
   }
 
   const overContainer = findContainer(overId, items, memberToContainer);
-  const activeContainer = findContainer(active.id, items, memberToContainer);
+  const activeContainer = findContainer(source.id, items, memberToContainer);
 
-  if (!overContainer || !activeContainer || activeContainer === overContainer) {
+  if (!overContainer || !activeContainer) {
     return;
   }
 
   setItems((prev) => {
     const activeList = prev[activeContainer];
+    const activeIndex = activeList.indexOf(source.id);
+    if (activeIndex < 0) return prev;
+
+    // Allow live sorting inside the same container while dragging
+    if (activeContainer === overContainer) {
+      if (overId in prev) return prev;
+      const overIndex = activeList.indexOf(overId);
+      if (overIndex < 0) return prev;
+
+      const modifier = isBelowOverItem ? 1 : 0;
+      const nextIndex = Math.max(
+        0,
+        Math.min(overIndex + modifier, activeList.length - 1)
+      );
+      if (nextIndex === activeIndex) return prev;
+
+      return {
+        ...prev,
+        [activeContainer]: arrayMove(activeList, activeIndex, nextIndex),
+      };
+    }
+
     const overList = prev[overContainer];
-    const activeIndex = activeList.indexOf(active.id);
     const overIndex = overList.indexOf(overId);
     let newIndex: number;
 
     if (overId in prev) {
-      newIndex = overList.length + 1;
+      newIndex = overList.length;
     } else {
-      const isBelowOverItem =
-        over &&
-        active.rect.current.translated &&
-        active.rect.current.translated.top > over.rect.top + over.rect.height;
       const modifier = isBelowOverItem ? 1 : 0;
-      newIndex = overIndex >= 0 ? overIndex + modifier : overList.length + 1;
+      newIndex = overIndex >= 0 ? overIndex + modifier : overList.length;
     }
 
     const movingId = activeList[activeIndex];
@@ -75,15 +115,14 @@ export function onDragOver({
       ],
     };
     recentlyMovedToNewContainer.current = true;
-    // Atualiza mapa O(1)
     setMemberToContainer((m) => ({ ...m, [movingId]: overContainer }));
     return next;
   });
 }
 
 export function onDragEnd({
-  active,
-  over,
+  source,
+  target,
   items,
   activeId,
   setItems,
@@ -93,21 +132,21 @@ export function onDragEnd({
   memberToContainer,
   setMemberToContainer,
 }: onDragEndProps) {
-  if (active.id in items && over?.id) {
+  if (source.id in items && target?.id) {
     setContainers((containers) => {
-      const activeIndex = containers.indexOf(active.id);
-      const overIndex = containers.indexOf(over.id);
+      const activeIndex = containers.indexOf(source.id);
+      const overIndex = containers.indexOf(target.id);
       return arrayMove(containers, activeIndex, overIndex);
     });
   }
 
-  const activeContainer = findContainer(active.id, items, memberToContainer);
+  const activeContainer = findContainer(source.id, items, memberToContainer);
   if (!activeContainer) {
     setActiveId(null);
     return;
   }
 
-  const overId = over?.id;
+  const overId = target?.id;
   if (overId == null) {
     setActiveId(null);
     return;
@@ -116,7 +155,7 @@ export function onDragEnd({
   if (overId === TRASH_ID) {
     setItems((prev) => ({
       ...prev,
-      [activeContainer]: prev[activeContainer].filter((id) => id !== activeId),
+      [activeContainer]: prev[activeContainer].filter((id) => id !== source.id),
     }));
     if (activeId) {
       setMemberToContainer((m) => {
@@ -135,7 +174,7 @@ export function onDragEnd({
       setContainers((c) => [...c, newContainerId]);
       setItems((prev) => {
         const activeList = prev[activeContainer];
-        const idx = activeList.findIndex((id) => id === active.id);
+        const idx = activeList.findIndex((id) => id === source.id);
         const movingId = activeList[idx];
         return {
           ...prev,
@@ -144,7 +183,7 @@ export function onDragEnd({
         };
       });
       setMemberToContainer((m) =>
-        active.id ? { ...m, [active.id]: newContainerId } : m
+        source.id ? { ...m, [source.id]: newContainerId } : m
       );
       setActiveId(null);
     });
@@ -153,28 +192,30 @@ export function onDragEnd({
 
   const overContainer = findContainer(overId, items, memberToContainer);
   if (overContainer) {
-    const activeIndex = items[activeContainer].indexOf(active.id);
+    const activeIndex = items[activeContainer].indexOf(source.id);
     const overIndex = items[overContainer].indexOf(overId);
-    if (activeIndex !== overIndex || activeContainer !== overContainer) {
+    const targetIndex =
+      overIndex >= 0 ? overIndex : items[overContainer].length - 1;
+    if (activeIndex !== targetIndex || activeContainer !== overContainer) {
       setItems((prev) => ({
         ...prev,
         [overContainer]: arrayMove(
           prev[overContainer],
           activeContainer === overContainer
             ? activeIndex
-            : prev[overContainer].indexOf(active.id),
-          overIndex
+            : prev[overContainer].indexOf(source.id),
+          targetIndex
         ),
         ...(activeContainer !== overContainer
           ? {
               [activeContainer]: prev[activeContainer].filter(
-                (id) => id !== active.id
+                (id) => id !== source.id
               ),
             }
-          : null),
+          : ({} as Record<string, never>)),
       }));
       if (activeContainer !== overContainer) {
-        setMemberToContainer((m) => ({ ...m, [active.id]: overContainer }));
+        setMemberToContainer((m) => ({ ...m, [source.id]: overContainer }));
       }
     }
   }

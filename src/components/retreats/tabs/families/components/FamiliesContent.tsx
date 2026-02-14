@@ -2,8 +2,7 @@
 
 import { Box, CircularProgress, Stack, Typography } from "@mui/material";
 import RetreatFamiliesTable from "../RetreatFamiliesTable";
-import { Items } from "../types";
-import { UniqueIdentifier } from "@dnd-kit/core";
+import { Items, UniqueIdentifier } from "../types";
 import { RetreatsCardTableFilters } from "@/src/components/public/retreats/types";
 
 interface FamiliesContentProps {

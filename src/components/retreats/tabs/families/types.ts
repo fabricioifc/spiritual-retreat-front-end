@@ -1,11 +1,6 @@
-import {
-  CancelDrop,
-  KeyboardCoordinateGetter,
-  Modifiers,
-  UniqueIdentifier,
-} from "@dnd-kit/core";
-import { SortingStrategy } from "@dnd-kit/sortable";
 import { RetreatsCardTableFilters } from "../../types";
+
+export type UniqueIdentifier = string | number;
 
 export interface RetreatFamilyRequest {
   families: RetreatFamily[];
@@ -27,10 +22,10 @@ export interface FamiliesModalAction {
 
 export interface RetreatFamiliesProps {
   adjustScale?: boolean;
-  cancelDrop?: CancelDrop;
+  cancelDrop?: unknown;
   columns?: number;
   containerStyle?: React.CSSProperties;
-  coordinateGetter?: KeyboardCoordinateGetter;
+  coordinateGetter?: unknown;
   getItemStyles?(args: {
     value: UniqueIdentifier;
     index: number;
@@ -45,8 +40,8 @@ export interface RetreatFamiliesProps {
   items?: RetreatFamily[];
   handle?: boolean;
   renderItem?: unknown;
-  strategy?: SortingStrategy;
-  modifiers?: Modifiers;
+  strategy?: unknown;
+  modifiers?: unknown;
   minimal?: boolean;
   trashable?: boolean;
   scrollable?: boolean;

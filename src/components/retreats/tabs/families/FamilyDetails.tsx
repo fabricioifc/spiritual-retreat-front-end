@@ -22,10 +22,10 @@ import {
 import { useTranslations } from "next-intl";
 import Iconify from "@/src/components/Iconify";
 import { MuiColorInput } from "mui-color-input";
-import { UniqueIdentifier } from "@dnd-kit/core";
 import apiClient from "@/src/lib/axiosClientInstance";
 import { enqueueSnackbar } from "notistack";
 import axios from "axios";
+import { UniqueIdentifier } from "./types";
 
 interface FamilyDetailsProps {
   familyId: UniqueIdentifier;

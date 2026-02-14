@@ -1,10 +1,10 @@
 import React from "react";
 import { Button, Stack } from "@mui/material";
-import { UniqueIdentifier } from "@dnd-kit/core";
 import Visibility from "@mui/icons-material/Visibility";
 import Edit from "@mui/icons-material/Edit";
 import Delete from "@mui/icons-material/Delete";
 import { useTranslations } from "next-intl";
+import { UniqueIdentifier } from "./types";
 
 interface ContainerButtonsProps {
   familyId: UniqueIdentifier;

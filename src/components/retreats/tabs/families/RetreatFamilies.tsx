@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { Container } from "@mui/material";
 import { useUrlFilters } from "@/src/hooks/useUrlFilters";
 import { useTranslations } from "next-intl";
-import { UniqueIdentifier } from "@dnd-kit/core";
 import { useModal } from "@/src/hooks/useModal";
 import { useMenuMode } from "@/src/contexts/users-context/MenuModeContext";
 
@@ -25,7 +24,7 @@ import FamilyDetails from "./FamilyDetails";
 import LockFamiliesModal from "./LockFamiliesModal";
 import ResetFamiliesModal from "./ResetFamiliesModal";
 
-import { Items } from "./types";
+import { Items, UniqueIdentifier } from "./types";
 
 import apiClient from "@/src/lib/axiosClientInstance";
 import { RetreatsCardTableFilters } from "@/src/components/public/retreats/types";
