@@ -1,10 +1,17 @@
-"use client";
+'use client';
+
+import { Fragment, useMemo, useState } from 'react';
+
+import { useTranslations } from 'next-intl';
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   Alert,
   Avatar,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
   Divider,
   FormControlLabel,
@@ -15,13 +22,10 @@ import {
   Stack,
   TextField,
   Typography,
-  Checkbox,
-} from "@mui/material";
-import { useTranslations } from "next-intl";
-import { Fragment, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Iconify from "@/src/components/Iconify";
-import apiClient from "@/src/lib/axiosClientInstance";
+} from '@mui/material';
+
+import Iconify from '@/src/components/Iconify';
+import apiClient from '@/src/lib/axiosClientInstance';
 
 export interface ParticipantWithoutFamily {
   registrationId: string;
@@ -59,7 +63,7 @@ const drawFamiliesRequest = async (
   const response = await apiClient.post(
     `/retreats/${retreatId}/families/generate`,
     {
-      capacity: count,
+      membersPerFamily: count,
       replaceExisting: clearExisting,
       fillExistingFirst,
     }
@@ -74,7 +78,7 @@ export default function DrawFamilies({
 }: DrawFamiliesProps) {
   const t = useTranslations();
   const queryClient = useQueryClient();
-  const [count, setCount] = useState(50);
+  const [count, setCount] = useState(4);
   const [clearExisting, setClearExisting] = useState(true);
   const [fillExistingFirst, setFillExistingFirst] = useState(true);
 
@@ -85,7 +89,7 @@ export default function DrawFamilies({
     refetch,
     error,
   } = useQuery({
-    queryKey: ["retreat-families-unassigned", retreatId],
+    queryKey: ['retreat-families-unassigned', retreatId],
     queryFn: () => fetchParticipantsWithoutFamily(retreatId),
     staleTime: 30_000,
   });
@@ -95,9 +99,9 @@ export default function DrawFamilies({
       drawFamiliesRequest(retreatId, count, clearExisting, fillExistingFirst),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["retreat-families-unassigned", retreatId],
+        queryKey: ['retreat-families-unassigned', retreatId],
       });
-      queryClient.invalidateQueries({ queryKey: ["retreat-families"] });
+      queryClient.invalidateQueries({ queryKey: ['retreat-families'] });
       onSuccess?.();
     },
   });
@@ -106,19 +110,19 @@ export default function DrawFamilies({
   const isDrawDisabled = totalParticipants === 0 || drawMutation.isPending;
 
   const title = useMemo(() => {
-    if (isLoading) return t("loading-participants");
-    return t("participants-without-family");
+    if (isLoading) return t('loading-participants');
+    return t('participants-without-family');
   }, [isLoading, t]);
 
   return (
-    <Box sx={{ width: "100%", minHeight: 280 }}>
+    <Box sx={{ width: '100%', minHeight: 280 }}>
       <Stack spacing={3}>
         <Box>
           <Typography variant="h6" gutterBottom>
             {title}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {t("participants-without-family-description")}
+            {t('participants-without-family-description')}
           </Typography>
         </Box>
 
@@ -133,13 +137,13 @@ export default function DrawFamilies({
             severity="error"
             action={
               <Button color="inherit" size="small" onClick={() => refetch()}>
-                {t("retry")}
+                {t('retry')}
               </Button>
             }
           >
             {error instanceof Error
               ? error.message
-              : t("failed-to-load-participants")}
+              : t('failed-to-load-participants')}
           </Alert>
         )}
 
@@ -147,7 +151,7 @@ export default function DrawFamilies({
           <Box
             sx={{
               maxHeight: 320,
-              overflowY: "auto",
+              overflowY: 'auto',
               borderRadius: 2,
               border: (theme) => `1px solid ${theme.palette.divider}`,
             }}
@@ -161,7 +165,7 @@ export default function DrawFamilies({
                   color="text.disabled"
                 />
                 <Typography variant="body2" color="text.secondary">
-                  {t("no-unassigned-participants")}
+                  {t('no-unassigned-participants')}
                 </Typography>
               </Stack>
             ) : (
@@ -172,11 +176,11 @@ export default function DrawFamilies({
                       <ListItemAvatar>
                         <Avatar>
                           {participant.name
-                            ?.split(" ")
+                            ?.split(' ')
                             .map((part) => part[0])
-                            .join("")
+                            .join('')
                             .slice(0, 2)
-                            .toUpperCase() || "?"}
+                            .toUpperCase() || '?'}
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
@@ -214,17 +218,22 @@ export default function DrawFamilies({
         )}
 
         <Stack spacing={2}>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               type="number"
-              label={t("family-capacity")}
+              label={t('family-capacity')}
               value={count}
-              onChange={(e) =>
-                setCount(Math.max(1, parseInt(e.target.value) || 1))
-              }
-              inputProps={{ min: 1 }}
+              onChange={(e) => {
+                const parsedValue = parseInt(e.target.value, 10);
+                const normalizedValue = Number.isNaN(parsedValue)
+                  ? 4
+                  : Math.min(20, Math.max(4, parsedValue));
+                setCount(normalizedValue);
+              }}
+              inputProps={{ min: 4, max: 20 }}
+              helperText="Allowed range: 4 to 20"
               size="small"
-              sx={{ width: { xs: "100%", sm: 200 } }}
+              sx={{ width: { xs: '100%', sm: 200 } }}
             />
           </Stack>
           <FormControlLabel
@@ -234,7 +243,7 @@ export default function DrawFamilies({
                 onChange={(e) => setClearExisting(e.target.checked)}
               />
             }
-            label={t("clear-existing-families")}
+            label={t('clear-existing-families')}
           />
           <FormControlLabel
             control={
@@ -243,7 +252,7 @@ export default function DrawFamilies({
                 onChange={(e) => setFillExistingFirst(e.target.checked)}
               />
             }
-            label={t("fill-existing-first")}
+            label={t('fill-existing-first')}
           />
         </Stack>
 
@@ -254,7 +263,7 @@ export default function DrawFamilies({
           justifyContent="space-between"
         >
           <Typography variant="body2" color="text.secondary">
-            {t("unassigned-participants-count", { count: totalParticipants })}
+            {t('unassigned-participants-count', { count: totalParticipants })}
           </Typography>
           <Button
             variant="contained"
@@ -269,7 +278,7 @@ export default function DrawFamilies({
               )
             }
           >
-            {drawMutation.isPending ? t("drawing") : t("start-family-draw")}
+            {drawMutation.isPending ? t('drawing') : t('start-family-draw')}
           </Button>
         </Stack>
 
@@ -277,12 +286,12 @@ export default function DrawFamilies({
           <Alert severity="error">
             {drawMutation.error instanceof Error
               ? drawMutation.error.message
-              : t("failed-to-draw-families")}
+              : t('failed-to-draw-families')}
           </Alert>
         )}
 
         {drawMutation.isSuccess && (
-          <Alert severity="success">{t("families-draw-success")}</Alert>
+          <Alert severity="success">{t('families-draw-success')}</Alert>
         )}
       </Stack>
     </Box>
