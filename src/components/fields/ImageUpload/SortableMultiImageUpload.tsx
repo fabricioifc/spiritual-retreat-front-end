@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -83,6 +83,9 @@ export default function SortableMultiImageUpload({
   errorText,
 }: SortableMultiImageUploadProps) {
   const objectUrlsRef = useRef<Map<string, string>>(new Map());
+  const [localPreviewUrls, setLocalPreviewUrls] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     const localItems = value.filter(
@@ -103,12 +106,23 @@ export default function SortableMultiImageUpload({
         objectUrlsRef.current.set(item.id, URL.createObjectURL(item.file));
       }
     }
+
+    const nextPreviewUrls: Record<string, string> = {};
+    for (const item of localItems) {
+      const previewUrl = objectUrlsRef.current.get(item.id);
+      if (previewUrl) {
+        nextPreviewUrls[item.id] = previewUrl;
+      }
+    }
+    setLocalPreviewUrls(nextPreviewUrls);
   }, [value]);
 
   useEffect(() => {
+    const objectUrls = objectUrlsRef.current;
     return () => {
-      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
-      objectUrlsRef.current.clear();
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+      objectUrls.clear();
+      setLocalPreviewUrls({});
     };
   }, []);
 
@@ -243,23 +257,42 @@ export default function SortableMultiImageUpload({
             const previewUrl =
               item.source === "server"
                 ? item.url
-                : objectUrlsRef.current.get(item.id) ?? "";
+                : localPreviewUrls[item.id] ?? null;
             const isFirst = index === 0;
             const isLast = index === value.length - 1;
 
             return (
               <ImageListItem key={item.id}>
-                <img
-                  src={previewUrl}
-                  alt={item.title ?? `Imagem ${index + 1}`}
-                  loading="lazy"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    borderRadius: 8,
-                  }}
-                />
+                {previewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={previewUrl}
+                    alt={item.title ?? `Imagem ${index + 1}`}
+                    loading="lazy"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: 8,
+                    }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      minHeight: rowHeight,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 1,
+                      bgcolor: "action.hover",
+                      color: "text.secondary",
+                    }}
+                  >
+                    <Typography variant="caption">Carregando preview...</Typography>
+                  </Box>
+                )}
                 <ImageListItemBar
                   title={item.title ?? ""}
                   subtitle={`Ordem: ${index + 1}`}
@@ -289,18 +322,20 @@ export default function SortableMultiImageUpload({
                           </IconButton>
                         </span>
                       </Tooltip>
-                      <Tooltip title="Abrir">
-                        <IconButton
-                          size="small"
-                          component="a"
-                          href={previewUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          sx={{ color: "white" }}
-                        >
-                          <ZoomOutMapRoundedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      {previewUrl && (
+                        <Tooltip title="Abrir">
+                          <IconButton
+                            size="small"
+                            component="a"
+                            href={previewUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            sx={{ color: "white" }}
+                          >
+                            <ZoomOutMapRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <Tooltip title="Remover">
                         <span>
                           <IconButton
