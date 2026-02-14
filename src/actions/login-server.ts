@@ -30,6 +30,10 @@ export async function loginServerAction(formData: FormData) {
 
   const callbackUrl =
     formData.get('callbackUrl')?.toString() || DEFAULT_REDIRECT;
+  console.warn('[auth][login-server] submit', {
+    email,
+    callbackUrl,
+  });
 
   try {
     await signIn('credentials', {
@@ -37,8 +41,24 @@ export async function loginServerAction(formData: FormData) {
       password,
       redirectTo: callbackUrl,
     });
+    console.warn('[auth][login-server] signIn resolved without redirect throw');
   } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'digest' in error &&
+      typeof (error as { digest?: unknown }).digest === 'string'
+    ) {
+      console.warn('[auth][login-server] redirect/error digest', {
+        digest: (error as { digest: string }).digest,
+      });
+    }
+
     if (error instanceof AuthError) {
+      console.warn('[auth][login-server] auth error', {
+        type: error.type,
+        message: error.message,
+      });
       switch (error.type) {
         case 'CredentialsSignin':
         case 'CallbackRouteError': // Às vezes ocorre em credenciais erradas
