@@ -80,15 +80,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   //basePath: "/auth",
   callbacks: {
     async signIn({ user, account }) {
+      console.warn('[auth][signIn] incoming', {
+        provider: account?.provider,
+        hasUser: Boolean(user),
+      });
       if (account?.provider !== 'credentials') return true;
       if (user) {
-        //console.log("User signed in:", user);
+        console.warn('[auth][signIn] credentials accepted');
         return true;
       }
+      console.warn('[auth][signIn] credentials rejected: missing user');
       return false;
     },
 
     async jwt({ token, user }) {
+      console.warn('[auth][jwt] callback', {
+        hasIncomingUser: Boolean(user),
+        hasTokenData: Boolean(token.data),
+        tokenError: token.error ?? null,
+      });
+
       if (user) {
         const enrichedUser = user as User & {
           tokens?: BackendJWT;
@@ -145,9 +156,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // eslint-disable-next-line no-console
         console.log('🔄 Refreshing access token...');
         const refreshedToken = await refreshAccessToken(token);
-        if (refreshedToken.error) {
+        if (
+          refreshedToken.error === 'RefreshAccessTokenError' ||
+          refreshedToken.error === 'RefreshTokenExpired'
+        ) {
           console.log('❌ Refresh failed - forcing logout');
           return { ...token, error: 'RefreshAccessTokenError' };
+        }
+
+        if (refreshedToken.error) {
+          console.warn('⚠️ Transient refresh issue - keeping current session', {
+            refreshError: refreshedToken.error,
+          });
+          return token;
         }
 
         return refreshedToken;
@@ -160,7 +181,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return { ...token, error: 'RefreshTokenExpired' } as JWT;
     },
     async session({ session, token }) {
+      console.warn('[auth][session] callback', {
+        hasTokenData: Boolean(token.data),
+        tokenError: token.error ?? null,
+      });
+
       const buildInvalidSession = (errorCode: string) => {
+        console.warn('[auth][session] invalid session', {
+          errorCode,
+          hasTokenData: Boolean(token.data),
+        });
         return {
           ...session,
           user: undefined,
@@ -184,6 +214,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return buildInvalidSession('InvalidUserData');
       }
 
+      console.warn('[auth][session] valid session created', {
+        userId: token.data.user?.id ?? null,
+        hasTokens: Boolean(token.data.tokens),
+      });
+
       return {
         ...session,
         user: token.data.user,
@@ -203,10 +238,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const { pathname } = request.nextUrl;
       const isPublicRoute = isPublicPath(pathname);
       const isAuthRoute = authRoutes.includes(pathname);
+      const allCookies = request.cookies.getAll();
+      const cookieNames = allCookies.map((cookie) => cookie.name);
+      const sessionCookieCandidates = cookieNames.filter(
+        (name) =>
+          name.includes('authjs.session-token') ||
+          name.includes('next-auth.session-token') ||
+          name.includes('__Secure-authjs.session-token') ||
+          name.includes('__Secure-next-auth.session-token')
+      );
+      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+
+      console.warn('[auth][authorized] check', {
+        pathname,
+        callbackUrl,
+        isPublicRoute,
+        isAuthRoute,
+        hasAuthObject: Boolean(auth),
+        hasUser: Boolean(auth?.user),
+        authError: auth?.error ?? null,
+        cookieNames,
+        sessionCookieCandidates,
+      });
 
       if (!isPublicRoute && !isAuthRoute) {
-        return !auth?.error && !!auth?.user;
+        const isAllowed = !auth?.error && !!auth?.user;
+        if (!isAllowed) {
+          console.warn('[auth][authorized] denied protected route', {
+            pathname,
+            reason: auth?.error ? 'auth_error' : 'missing_user',
+            authError: auth?.error ?? null,
+            hasUser: Boolean(auth?.user),
+          });
+        }
+        return isAllowed;
       }
+      console.warn('[auth][authorized] allowed public/auth route', { pathname });
       return true;
     },
   },
@@ -258,6 +325,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       authorize: async (
         credentials: Partial<Record<'email' | 'password' | 'code', unknown>>
       ) => {
+        console.warn('[auth][provider:credentials] authorize start', {
+          hasEmail: Boolean(credentials.email),
+          hasPassword: Boolean(credentials.password),
+          hasCode: Boolean(credentials.code),
+        });
         // Não envolva tudo em try/catch que retorna null; só capture para re-lançar
         try {
           // Fluxo de verificação de código direto
@@ -271,6 +343,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
             if (!data?.accessToken || error) {
               // Código inválido -> credenciais inválidas
+              console.warn(
+                '[auth][provider:credentials] code flow denied',
+                { hasData: Boolean(data), error: error ?? null }
+              );
               return null;
             }
 
@@ -310,14 +386,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           );
           const data = response.data;
 
-          if (!data) return null;
+          if (!data) {
+            console.warn('[auth][provider:credentials] denied: empty login data');
+            return null;
+          }
 
           if (data.isNonCodeConfirmed) {
             // Usuário precisa confirmar código -> lançar erro tipado
+            console.warn(
+              '[auth][provider:credentials] denied: confirmation code required'
+            );
             throw new UserNotActivatedError();
           }
 
-          if (!data.accessToken || !data.refreshToken) return null;
+          if (!data.accessToken || !data.refreshToken) {
+            console.warn(
+              '[auth][provider:credentials] denied: missing access/refresh token',
+              {
+                hasAccessToken: Boolean(data.accessToken),
+                hasRefreshToken: Boolean(data.refreshToken),
+              }
+            );
+            return null;
+          }
 
           const tokens: BackendJWT = {
             accessToken: data.accessToken,
@@ -341,6 +432,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             validity,
           } as User;
         } catch (err) {
+          console.error('[auth][provider:credentials] authorize failed', err);
           console.error('❌ Authorize execution failed:', err);
           // Se já é CredentialsSignin (ou subclasse) re-lança para NextAuth tratar e preservar cause
           if (err instanceof CredentialsSignin) throw err;
@@ -396,15 +488,30 @@ async function refreshAccessToken(nextAuthJWT: JWT): Promise<JWT> {
       };
     } catch (error) {
       console.error('❌ Failed to refresh access token:', error);
-      return {
-        ...nextAuthJWT,
-        error: 'RefreshAccessTokenError',
-      };
+      const status =
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof (error as { response?: unknown }).response === 'object' &&
+        (error as { response?: { status?: number } }).response?.status
+          ? (error as { response: { status: number } }).response.status
+          : undefined;
+
+      if (status === 400 || status === 401 || status === 403) {
+        // Hard failure: refresh token invalid/expired/revoked.
+        return {
+          ...nextAuthJWT,
+          error: 'RefreshAccessTokenError',
+        };
+      }
+
+      // Soft failure: network/5xx/transient issues. Keep session and retry later.
+      return nextAuthJWT;
     } finally {
       // Importante: Limpa a variável para permitir futuros refreshes
       refreshPromise = null;
     }
   })();
 
-  return refreshPromise;
+  return refreshPromise!;
 }

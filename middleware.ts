@@ -6,6 +6,13 @@ export default auth((req) => {
   const { nextUrl } = req;
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-url", req.url);
+  const acceptHeader = req.headers.get("accept") || "";
+  const fetchDest = req.headers.get("sec-fetch-dest") || "";
+  const fetchMode = req.headers.get("sec-fetch-mode") || "";
+  const isHtmlNavigation =
+    acceptHeader.includes("text/html") ||
+    (fetchDest === "document" && fetchMode === "navigate");
+
   const isPublicRoute = isPublicPath(nextUrl.pathname);
   const isCodeRoute = nextUrl.pathname === "/login/code";
   const isAuthRoute =
@@ -24,7 +31,7 @@ export default auth((req) => {
     req.auth?.error === "RefreshTokenExpired";
 
   // Se há erro de token, redireciona para login
-  if (hasTokenError && !isAuthRoute) {
+  if (hasTokenError && !isAuthRoute && isHtmlNavigation) {
     let callbackUrl = nextUrl.pathname;
     if (nextUrl.search) {
       callbackUrl += nextUrl.search;
@@ -47,7 +54,7 @@ export default auth((req) => {
       return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
   }
 
-  if (!isLoggedIn && !isPublicRoute && !isAuthRoute) {
+  if (!isLoggedIn && !isPublicRoute && !isAuthRoute && isHtmlNavigation) {
     let callbackUrl = nextUrl.pathname;
     if (nextUrl.search) {
       callbackUrl += nextUrl.search;
