@@ -30,7 +30,29 @@ type ReportGeneral = {
   title: string;
   dateCreation: string;
   templateKey?: string;
+  category?: string;
   defaultParamsJson?: string;
+};
+
+const normalizeReportType = (value?: string) =>
+  (value ?? '').toString().trim().toLowerCase();
+
+const resolveReportRoute = (report: ReportGeneral) => {
+  const type = normalizeReportType(report.category || report.templateKey);
+
+  const isLogisticType = [
+    'logistic',
+    'tents',
+    'tentsallocation',
+    'ribbons',
+    'service-team',
+    'serviceteam',
+    'exitchecklist',
+    'botafora',
+    'bota-fora',
+  ].includes(type);
+
+  return isLogisticType ? 'logistic' : 'all';
 };
 
 type ReportDataRequest = {
@@ -167,9 +189,8 @@ const ReportPage = () => {
 
   // Handlers for the DataGrid actions
   const handleViewReport = (report: any) => {
-    // const url = getUrlByReportType(report.type);
-    // router.push(`/reports/${report.id}/${url}`);
-    router.push(`/reports/${report.id}/generic`);
+    const route = resolveReportRoute(report as ReportGeneral);
+    router.push(`/reports/${report.id}/${route}`);
   };
 
   const handleDeleteReport = (

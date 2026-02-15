@@ -94,7 +94,6 @@ export default function ReportForm() {
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -160,17 +159,6 @@ export default function ReportForm() {
 
     setIsSubmitting(true);
     try {
-      const response = await apiClient.post<{
-        retreatId: string;
-        templateKey: string;
-        title: string;
-      }>('/reports', {
-        title: formValues.name,
-        templateKey: formValues.reportType,
-        retreatId: formValues.retreat.id,
-        // defaultParamsJson: JSON.stringify({ columns }),
-      });
-
       enqueueSnackbar('Relatório criado com sucesso!', { variant: 'success' });
       // router.push(`/reports/${response.id}`)
       // Reset form
