@@ -1,0 +1,1 @@
+export { ServiceTeamGridItem } from "./ServiceTeamGridItem";

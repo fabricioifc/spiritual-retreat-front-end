@@ -11,7 +11,7 @@ interface ContainerButtonsProps {
   onEdit: (id: UniqueIdentifier) => void;
   onView: (id: UniqueIdentifier) => void;
   onDelete: (id: UniqueIdentifier) => void;
-  familyId: UniqueIdentifier;
+  serviceTeamId: UniqueIdentifier;
   canEdit: boolean;
   reorderFlag: boolean;
   disableActions?: boolean;
@@ -22,7 +22,7 @@ export default function ContainerButtons({
   onEdit,
   onView,
   onDelete,
-  familyId,
+  serviceTeamId,
   canEdit,
   reorderFlag,
   disableActions = false,
@@ -38,7 +38,7 @@ export default function ContainerButtons({
         <Button
           size="small"
           variant="outlined"
-          onClick={() => onView(familyId)}
+          onClick={() => onView(serviceTeamId)}
           disabled={reorderFlag}
           fullWidth
           startIcon={<Visibility />}
@@ -51,7 +51,7 @@ export default function ContainerButtons({
             <Button
               size="small"
               variant="contained"
-              onClick={() => onEdit(familyId)}
+              onClick={() => onEdit(serviceTeamId)}
               disabled={reorderFlag || disableActions}
               fullWidth
               startIcon={<Edit />}
@@ -63,7 +63,7 @@ export default function ContainerButtons({
               variant="outlined"
               color="error"
               startIcon={<Delete />}
-              onClick={() => onDelete(familyId)}
+              onClick={() => onDelete(serviceTeamId)}
               disabled={disableActions}
               sx={{ minWidth: "auto" }}
             >
