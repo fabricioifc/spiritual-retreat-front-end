@@ -26,7 +26,6 @@ import getPermission from "@/src/utils/getPermission";
 import { useSession } from "next-auth/react";
 import { useUrlFilters } from "@/src/hooks/useUrlFilters";
 import { useTranslations } from "next-intl";
-import { UniqueIdentifier } from "@dnd-kit/core";
 import { useModal } from "@/src/hooks/useModal";
 import { Items } from "./types";
 import TentDetails from "./TentDetails";
@@ -42,6 +41,8 @@ interface RetreatRequest {
   tents: RetreatTentRoster[];
   version: number;
 }
+
+type UniqueIdentifier = string | number;
 
 const getTents = async (
   filters: TableDefaultFilters<

@@ -1,54 +1,31 @@
-"use client";
+'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
-import { createPortal } from "react-dom";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
+
+import { useTranslations } from 'next-intl';
+
+import { PointerActivationConstraints } from '@dnd-kit/dom';
 import {
-  closestCenter,
-  pointerWithin,
-  rectIntersection,
-  CollisionDetection,
-  DndContext,
+  DragDropProvider,
   DragOverlay,
-  DropAnimation,
-  getFirstCollision,
   KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
+  PointerSensor,
   useDroppable,
-  UniqueIdentifier,
-  useSensors,
-  useSensor,
-  MeasuringStrategy,
-  defaultDropAnimationSideEffects,
-} from "@dnd-kit/core";
-import {
-  AnimateLayoutChanges,
-  SortableContext,
-  useSortable,
-  defaultAnimateLayoutChanges,
-  verticalListSortingStrategy,
-  horizontalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-  Container,
-  ContainerProps,
-  Item,
-} from "@/src/components/dnd-kit/components";
-import { coordinateGetter as multipleContainersCoordinateGetter } from "@/src/components/dnd-kit/multipleContainersKeyboardCoordinates";
-import ContainerButtons from "./ContainerButtons";
-import MoreMenu from "./MoreMenu";
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  CellContext,
-} from "@tanstack/react-table";
+} from '@dnd-kit/react';
+import { useSortable } from '@dnd-kit/react/sortable';
+
 import {
   Box,
   Button,
+  Fab,
+  Fade,
   Grid,
   ListItemText,
   MenuItem,
@@ -57,91 +34,40 @@ import {
   Popover,
   Stack,
   Typography,
-  Fab,
-  Fade,
-} from "@mui/material";
-import Iconify from "@/src/components/Iconify";
+} from '@mui/material';
+
+import Iconify from '@/src/components/Iconify';
+import {
+  Container,
+  ContainerProps,
+  Item,
+} from '@/src/components/dnd-kit/components';
+import { LoadingScreen } from '@/src/components/loading-screen';
+
+import ContainerButtons from './ContainerButtons';
+import MoreMenu from './MoreMenu';
+import { TRASH_ID, onDragEnd, onDragOver } from './shared';
 import {
   Items,
-  RetreatTentsTableProps,
-  MembersById,
   MemberToContainer,
-} from "./types";
-import { onDragEnd, onDragOver, PLACEHOLDER_ID, TRASH_ID } from "./shared";
-import { LoadingScreen } from "@/src/components/loading-screen";
+  MembersById,
+  RetreatTentsTableProps,
+} from './types';
 
-const animateLayoutChanges: AnimateLayoutChanges = (args) =>
-  defaultAnimateLayoutChanges({ ...args, wasDragging: true });
+type UniqueIdentifier = string | number;
 
-function DroppableContainer({
-  children,
-  columns = 1,
-  disabled,
-  id,
-  items,
-  style,
-  color,
-  ...props
-}: ContainerProps & {
-  disabled?: boolean;
-  id: UniqueIdentifier;
-  items: UniqueIdentifier[];
-  style?: React.CSSProperties;
-}) {
-  const {
-    active,
-    attributes,
-    isDragging,
-    listeners,
-    over,
-    setNodeRef,
-    transition,
-    transform,
-  } = useSortable({
-    id,
-    data: {
-      type: "container",
-      children: items,
-    },
-    animateLayoutChanges,
-  });
-  const isOverContainer = over
-    ? (id === over.id && active?.data.current?.type !== "container") ||
-      items.includes(over.id)
-    : false;
+const DEFAULT_GET_ITEM_STYLES = () => ({});
+const DEFAULT_WRAPPER_STYLE = () => ({});
+const GRID_CARD_SIZE = { xs: 12, md: 6, lg: 4 } as const;
 
-  return (
-    <Container
-      ref={disabled ? undefined : setNodeRef}
-      style={{
-        ...style,
-        transition,
-        transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0.5 : undefined,
-      }}
-      hover={isOverContainer}
-      handleProps={{
-        ...attributes,
-        ...listeners,
-      }}
-      columns={columns}
-      color={color}
-      {...props}
-    >
-      {children}
-    </Container>
-  );
-}
-
-const dropAnimation: DropAnimation = {
-  sideEffects: defaultDropAnimationSideEffects({
-    styles: {
-      active: {
-        opacity: "0.5",
-      },
-    },
+const sensors = [
+  PointerSensor.configure({
+    activationConstraints: [
+      new PointerActivationConstraints.Distance({ value: 6 }),
+    ],
   }),
-};
+  KeyboardSensor,
+];
 
 function cloneItems(source: Items): Items {
   return Object.fromEntries(
@@ -150,24 +76,269 @@ function cloneItems(source: Items): Items {
 }
 
 const genderColorMap: Record<string, string> = {
-  Male: "#1976d2",
-  Female: "#d81b60",
+  Male: '#1976d2',
+  Female: '#d81b60',
 };
 
+type DroppableTentContainerProps = ContainerProps & {
+  disabled?: boolean;
+  id: UniqueIdentifier;
+  index: number;
+  items: UniqueIdentifier[];
+  style?: React.CSSProperties;
+  isSourceContainer?: boolean;
+  isTargetContainer?: boolean;
+};
+
+const DroppableTentContainer = React.memo(function DroppableTentContainer({
+  children,
+  columns = 1,
+  disabled,
+  id,
+  index: containerIndex,
+  items,
+  style,
+  color,
+  isSourceContainer,
+  isTargetContainer,
+  ...props
+}: DroppableTentContainerProps) {
+  const { ref, isDragging, isDropTarget } = useSortable({
+    id,
+    index: containerIndex,
+    data: {
+      type: 'container',
+      children: items,
+    },
+    disabled,
+  });
+
+  return (
+    <Container
+      ref={disabled ? undefined : ref}
+      style={{
+        ...style,
+        opacity: isDragging ? 0.5 : undefined,
+      }}
+      hover={Boolean(isTargetContainer || isSourceContainer) || isDropTarget}
+      handleProps={{}}
+      columns={columns}
+      color={color}
+      {...props}
+    >
+      {children}
+    </Container>
+  );
+});
+
+interface SortableTentItemProps {
+  id: UniqueIdentifier;
+  value: string;
+  index: number;
+  handle: boolean;
+  disabled?: boolean;
+  group: UniqueIdentifier;
+  style(args: {
+    value: UniqueIdentifier;
+    index: number;
+    overIndex: number;
+    isDragging: boolean;
+    containerId: UniqueIdentifier;
+    isSorting: boolean;
+    isDragOverlay: boolean;
+  }): React.CSSProperties;
+  containerId: UniqueIdentifier;
+  wrapperStyle({ index }: { index: number }): React.CSSProperties;
+}
+
+const SortableTentItem = React.memo(function SortableTentItem({
+  disabled,
+  id,
+  index,
+  handle,
+  value,
+  style,
+  containerId,
+  wrapperStyle,
+  group,
+}: SortableTentItemProps) {
+  const { ref, handleRef, isDragging, isDragSource } = useSortable({
+    id,
+    index,
+    group,
+    disabled,
+  });
+  const computedStyle = style({
+    index,
+    value: id,
+    isDragging,
+    isSorting: isDragSource,
+    overIndex: -1,
+    containerId,
+    isDragOverlay: false,
+  });
+
+  return (
+    <Item
+      ref={disabled ? undefined : ref}
+      value={value}
+      dragging={isDragging}
+      sorting={isDragSource}
+      handle={handle}
+      handleProps={handle && !disabled ? { ref: handleRef } : undefined}
+      index={index}
+      wrapperStyle={wrapperStyle({ index })}
+      style={computedStyle}
+    />
+  );
+});
+
+interface TentGridItemProps {
+  containerId: UniqueIdentifier;
+  containerIndex: number;
+  memberIds: UniqueIdentifier[];
+  tentMeta?: {
+    number: string;
+    category: string;
+    capacity: number;
+    color: string;
+  };
+  minimal: boolean;
+  scrollable?: boolean;
+  containerStyle?: React.CSSProperties;
+  canEditTentInMode: boolean;
+  isSortingContainer: boolean;
+  handle: boolean;
+  getItemStyles: NonNullable<RetreatTentsTableProps['getItemStyles']>;
+  wrapperStyle: NonNullable<RetreatTentsTableProps['wrapperStyle']>;
+  onEdit: (tentId: UniqueIdentifier) => void;
+  onView: (tentId: UniqueIdentifier) => void;
+  onDelete: (tentId: UniqueIdentifier) => void;
+  canEditTent: boolean;
+  membersById: MembersById;
+  isSourceContainer: boolean;
+  isTargetContainer: boolean;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}
+
+const TentGridItem = React.memo(function TentGridItem({
+  containerId,
+  containerIndex,
+  memberIds,
+  tentMeta,
+  minimal,
+  scrollable,
+  containerStyle,
+  canEditTentInMode,
+  isSortingContainer,
+  handle,
+  getItemStyles,
+  wrapperStyle,
+  onEdit,
+  onView,
+  onDelete,
+  canEditTent,
+  membersById,
+  isSourceContainer,
+  isTargetContainer,
+  t,
+}: TentGridItemProps) {
+  const label = tentMeta
+    ? t('card-label', { number: tentMeta.number })
+    : t('card-label', { number: containerId });
+
+  return (
+    <Grid size={GRID_CARD_SIZE}>
+      <DroppableTentContainer
+        id={containerId}
+        index={containerIndex}
+        label={minimal ? undefined : label}
+        color={tentMeta?.color}
+        items={memberIds}
+        scrollable={scrollable}
+        style={containerStyle}
+        unstyled={minimal}
+        disabled={!canEditTentInMode}
+        isSourceContainer={isSourceContainer}
+        isTargetContainer={isTargetContainer}
+      >
+        {memberIds.map((memberId, index) => {
+          const meta = membersById[memberId];
+          return (
+            <SortableTentItem
+              disabled={!canEditTentInMode || isSortingContainer}
+              key={memberId}
+              id={memberId}
+              value={meta?.name || String(memberId)}
+              index={index}
+              handle={handle}
+              style={getItemStyles}
+              wrapperStyle={wrapperStyle}
+              containerId={containerId}
+              group={containerId}
+            />
+          );
+        })}
+        <ContainerButtons
+          onEdit={onEdit}
+          onView={onView}
+          onDelete={onDelete}
+          tentId={containerId}
+          canEdit={canEditTent}
+          disableActions={!canEditTentInMode}
+        />
+        {tentMeta ? (
+          <Stack spacing={0.5} mt={1} alignItems="center">
+            <Typography variant="caption" color="text.secondary">
+              {t('tent-info', {
+                gender: t(`gender.${tentMeta.category}` as const),
+                capacity: tentMeta.capacity,
+                current: memberIds.length,
+              })}
+            </Typography>
+          </Stack>
+        ) : null}
+      </DroppableTentContainer>
+    </Grid>
+  );
+}, areTentGridItemPropsEqual);
+
+function areTentGridItemPropsEqual(
+  prev: TentGridItemProps,
+  next: TentGridItemProps
+) {
+  return (
+    prev.containerId === next.containerId &&
+    prev.containerIndex === next.containerIndex &&
+    prev.memberIds === next.memberIds &&
+    prev.tentMeta === next.tentMeta &&
+    prev.minimal === next.minimal &&
+    prev.scrollable === next.scrollable &&
+    prev.containerStyle === next.containerStyle &&
+    prev.canEditTentInMode === next.canEditTentInMode &&
+    prev.isSortingContainer === next.isSortingContainer &&
+    prev.handle === next.handle &&
+    prev.getItemStyles === next.getItemStyles &&
+    prev.wrapperStyle === next.wrapperStyle &&
+    prev.onEdit === next.onEdit &&
+    prev.onView === next.onView &&
+    prev.onDelete === next.onDelete &&
+    prev.canEditTent === next.canEditTent &&
+    prev.membersById === next.membersById &&
+    prev.isSourceContainer === next.isSourceContainer &&
+    prev.isTargetContainer === next.isTargetContainer &&
+    prev.t === next.t
+  );
+}
+
 export default function RetreatTentsTable({
-  adjustScale = false,
-  cancelDrop,
   items: initialItems,
   handle = true,
   containerStyle,
-  coordinateGetter = multipleContainersCoordinateGetter,
-  getItemStyles = () => ({}),
-  wrapperStyle = () => ({}),
+  getItemStyles = DEFAULT_GET_ITEM_STYLES,
+  wrapperStyle = DEFAULT_WRAPPER_STYLE,
   minimal = false,
-  modifiers,
-  strategy = verticalListSortingStrategy,
   trashable = false,
-  vertical = false,
   scrollable,
   onFiltersChange,
   filters,
@@ -180,7 +351,7 @@ export default function RetreatTentsTable({
   canEditTent,
   isEditMode,
 }: RetreatTentsTableProps) {
-  const t = useTranslations("tents");
+  const t = useTranslations('tents');
 
   const [items, setItems] = useState<Items>({});
   const [membersById, setMembersById] = useState<MembersById>({});
@@ -211,7 +382,7 @@ export default function RetreatTentsTable({
           number: tent.number,
           category: tent.category,
           capacity: tent.capacity,
-          color: genderColorMap[tent.category] ?? genderColorMap.male,
+          color: genderColorMap[tent.category] ?? genderColorMap.Male,
         };
 
         nextItems[tentId] =
@@ -219,7 +390,7 @@ export default function RetreatTentsTable({
             const participantId = String(participant.registrationId);
             nextMembersById[participantId] = {
               id: participantId,
-              name: participant.name ?? t("unknown-participant"),
+              name: participant.name ?? t('unknown-participant'),
               gender: participant.gender,
               city: participant.city,
             };
@@ -246,13 +417,21 @@ export default function RetreatTentsTable({
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const lastOverId = useRef<UniqueIdentifier | null>(null);
   const recentlyMovedToNewContainer = useRef(false);
+  const lastDragOverPositionRef = useRef<string | null>(null);
+  const itemsRef = useRef<Items>(items);
+  const memberToContainerRef = useRef<MemberToContainer>(memberToContainer);
+  const activeContainerIdRef = useRef<UniqueIdentifier | null>(null);
+  const overContainerIdRef = useRef<UniqueIdentifier | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState<{
     items: Items;
     memberToContainer: MemberToContainer;
   } | null>(null);
   const [clonedItems, setClonedItems] = useState<Items | null>(null);
+  const [activeContainerId, setActiveContainerId] =
+    useState<UniqueIdentifier | null>(null);
+  const [overContainerId, setOverContainerId] =
+    useState<UniqueIdentifier | null>(null);
 
   const canEditTentInMode = canEditTent && isEditMode;
 
@@ -274,71 +453,14 @@ export default function RetreatTentsTable({
   };
   const open = Boolean(anchorEl);
 
-  const collisionDetectionStrategy: CollisionDetection = useCallback(
-    (args) => {
-      if (activeId && activeId in items) {
-        return closestCenter({
-          ...args,
-          droppableContainers: args.droppableContainers.filter(
-            (container) => container.id in items
-          ),
-        });
-      }
-
-      const pointerIntersections = pointerWithin(args);
-      const intersections =
-        pointerIntersections.length > 0
-          ? pointerIntersections
-          : rectIntersection(args);
-      let overId = getFirstCollision(intersections, "id");
-
-      if (overId != null) {
-        if (overId === TRASH_ID) {
-          return intersections;
-        }
-
-        if (overId in items) {
-          const containerItems = items[overId];
-
-          if (containerItems.length > 0) {
-            overId = closestCenter({
-              ...args,
-              droppableContainers: args.droppableContainers.filter(
-                (container) =>
-                  container.id !== overId &&
-                  containerItems.indexOf(container.id) !== -1
-              ),
-            })[0]?.id;
-          }
-        }
-
-        lastOverId.current = overId;
-
-        return [{ id: overId }];
-      }
-
-      if (recentlyMovedToNewContainer.current) {
-        lastOverId.current = activeId;
-      }
-
-      return lastOverId.current ? [{ id: lastOverId.current }] : [];
+  const getIndex = useCallback(
+    (id: UniqueIdentifier) => {
+      const container = memberToContainer[id];
+      if (!container) return -1;
+      return items[container]?.indexOf(id) ?? -1;
     },
-    [activeId, items]
+    [items, memberToContainer]
   );
-
-  const sensors = useSensors(
-    useSensor(MouseSensor),
-    useSensor(TouchSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter,
-    })
-  );
-
-  const getIndex = (id: UniqueIdentifier) => {
-    const container = memberToContainer[id];
-    if (!container) return -1;
-    return items[container].indexOf(id);
-  };
 
   const handleSaveReorder = useCallback(async () => {
     if (!onSaveReorder) return;
@@ -351,7 +473,7 @@ export default function RetreatTentsTable({
       });
       setHasUnsavedChanges(false);
     } catch (error) {
-      console.error("Error saving reorder:", error);
+      console.error('Error saving reorder:', error);
 
       if (savedSnapshot) {
         setItems(cloneItems(savedSnapshot.items));
@@ -369,213 +491,233 @@ export default function RetreatTentsTable({
     setTentsReorderFlag,
   ]);
 
-  const onDragCancel = () => {
-    if (clonedItems) {
-      setItems(clonedItems);
-    }
-
-    setActiveId(null);
-    setClonedItems(null);
-  };
-
   useEffect(() => {
     requestAnimationFrame(() => {
       recentlyMovedToNewContainer.current = false;
     });
   }, [items]);
 
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  useEffect(() => {
+    memberToContainerRef.current = memberToContainer;
+  }, [memberToContainer]);
+
+  const handleDragCancel = useCallback(() => {
+    requestAnimationFrame(() => {
+      if (clonedItems) {
+        setItems(clonedItems);
+      }
+      setActiveId(null);
+      setActiveContainerId(null);
+      setOverContainerId(null);
+      activeContainerIdRef.current = null;
+      overContainerIdRef.current = null;
+      setClonedItems(null);
+    });
+  }, [clonedItems]);
+
   const page = filters.page || 1;
   const pageLimit = filters.pageLimit || 8;
   const totalItems = total ?? Object.keys(items).length ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageLimit));
 
-  const columnDefs: ColumnDef<UniqueIdentifier>[] = [
-    {
-      id: "card",
-      cell: (row) => {
-        const { original: containerId } = row.cell.row;
-        const memberIds = items[containerId] || [];
-        const tentMeta = tentsById[containerId];
-        const label = tentMeta
-          ? t("card-label", { number: tentMeta.number })
-          : t("card-label", { number: containerId });
-
-        return (
-          <DroppableContainer
-            key={containerId}
-            id={containerId}
-            label={minimal ? undefined : label}
-            color={tentMeta?.color}
-            items={memberIds}
-            scrollable={scrollable}
-            style={containerStyle}
-            unstyled={minimal}
-          >
-            <SortableContext items={memberIds} strategy={strategy}>
-              {memberIds.map((memberId, index) => {
-                const meta = membersById[memberId];
-                return (
-                  <SortableItem
-                    disabled={isSortingContainer}
-                    key={memberId}
-                    id={memberId}
-                    value={meta?.name || String(memberId)}
-                    index={index}
-                    handle={handle}
-                    style={getItemStyles}
-                    wrapperStyle={wrapperStyle}
-                    containerId={containerId}
-                    getIndex={getIndex}
-                  />
-                );
-              })}
-            </SortableContext>
-            <ContainerButtons
-              onEdit={onEdit}
-              onView={onView}
-              onDelete={onDelete}
-              tentId={containerId}
-              canEdit={canEditTent}
-              disableActions={!canEditTentInMode}
-            />
-            {tentMeta ? (
-              <Stack spacing={0.5} mt={1} alignItems="center">
-                <Typography variant="caption" color="text.secondary">
-                  {t("tent-info", {
-                    gender: t(`gender.${tentMeta.category}` as const),
-                    capacity: tentMeta.capacity,
-                    current: memberIds.length,
-                  })}
-                </Typography>
-              </Stack>
-            ) : null}
-          </DroppableContainer>
-        );
-      },
-    },
-  ];
-
-  const table = useReactTable({
-    data: containers || [],
-    columns: columnDefs,
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
-    pageCount: totalPages,
-    state: {
-      pagination: {
-        pageIndex: page - 1,
-        pageSize: pageLimit,
-      },
-    },
-    onPaginationChange: (updater) => {
-      const next =
-        typeof updater === "function"
-          ? updater({
-              pageIndex: page - 1,
-              pageSize: pageLimit,
-            })
-          : updater;
-
-      onFiltersChange({
-        ...filters,
-        page: next.pageIndex + 1,
-        pageLimit: next.pageSize,
-      });
-    },
-  });
+  const gridItems = useMemo(
+    () =>
+      containers.map((containerId) => (
+        <TentGridItem
+          key={containerId}
+          containerId={containerId}
+          containerIndex={containers.indexOf(containerId)}
+          memberIds={items[containerId] || []}
+          tentMeta={tentsById[containerId]}
+          minimal={minimal}
+          scrollable={scrollable}
+          containerStyle={containerStyle}
+          canEditTentInMode={canEditTentInMode}
+          isSortingContainer={isSortingContainer}
+          handle={handle}
+          getItemStyles={getItemStyles}
+          wrapperStyle={wrapperStyle}
+          onEdit={onEdit}
+          onView={onView}
+          onDelete={onDelete}
+          canEditTent={canEditTent}
+          membersById={membersById}
+          isSourceContainer={activeContainerId === containerId}
+          isTargetContainer={overContainerId === containerId}
+          t={
+            t as unknown as (
+              key: string,
+              options?: Record<string, unknown>
+            ) => string
+          }
+        />
+      )),
+    [
+      containers,
+      items,
+      tentsById,
+      minimal,
+      scrollable,
+      containerStyle,
+      canEditTentInMode,
+      isSortingContainer,
+      handle,
+      getItemStyles,
+      wrapperStyle,
+      onEdit,
+      onView,
+      onDelete,
+      canEditTent,
+      membersById,
+      activeContainerId,
+      overContainerId,
+      t,
+    ]
+  );
 
   if (Object.keys(items).length === 0) return <LoadingScreen />;
 
   return (
     <Box
       sx={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
         minHeight: 0,
-        position: "relative",
+        position: 'relative',
       }}
     >
-      <DndContext
+      <DragDropProvider
         sensors={sensors}
-        collisionDetection={collisionDetectionStrategy}
-        measuring={{
-          droppable: {
-            strategy: MeasuringStrategy.Always,
-          },
-        }}
-        onDragStart={({ active }) => {
+        onDragStart={(event) => {
           if (!canEditTentInMode) return;
-          setActiveId(active.id);
-          setClonedItems(items);
+          const source = event.operation.source;
+          if (!source) return;
+          setActiveId(source.id);
+          const sourceContainerId =
+            source.id in itemsRef.current
+              ? source.id
+              : (memberToContainerRef.current[source.id] ?? null);
+          activeContainerIdRef.current = sourceContainerId;
+          overContainerIdRef.current = sourceContainerId;
+          setActiveContainerId(sourceContainerId);
+          setOverContainerId(sourceContainerId);
+          setClonedItems(itemsRef.current);
+          lastDragOverPositionRef.current = null;
           setTentsReorderFlag?.(true);
         }}
-        onDragOver={({ active, over }) =>
+        onDragOver={(event) => {
+          if (!canEditTentInMode) return;
+          const source = event.operation.source;
+          const target = event.operation.target;
+          if (!source) return;
+          const currentItems = itemsRef.current;
+          const currentMemberToContainer = memberToContainerRef.current;
+          const targetContainerId = target
+            ? target.id in currentItems
+              ? target.id
+              : currentMemberToContainer[target.id]
+            : null;
+          if (overContainerIdRef.current !== targetContainerId) {
+            overContainerIdRef.current = targetContainerId;
+            setOverContainerId(targetContainerId);
+          }
+          let isBelowOverItem = false;
+          let overIndex = -1;
+          const tShape = target as {
+            shape?: { boundingRectangle?: { top: number; height: number } };
+          };
+          const opShape = event.operation.shape as {
+            boundingRectangle?: { top: number };
+          } | null;
+          if (
+            opShape?.boundingRectangle &&
+            tShape?.shape?.boundingRectangle &&
+            target?.id &&
+            !(target.id in currentItems)
+          ) {
+            const srcTop = opShape.boundingRectangle.top;
+            const tgtRect = tShape.shape.boundingRectangle;
+            isBelowOverItem = srcTop > tgtRect.top + tgtRect.height;
+          }
+          if (target && targetContainerId && !(target.id in currentItems)) {
+            overIndex =
+              currentItems[targetContainerId]?.indexOf(target.id) ?? -1;
+          }
+          const positionKey = `${String(source.id)}::${String(
+            targetContainerId ?? ''
+          )}::${String(target?.id ?? '')}::${String(overIndex)}::${
+            isBelowOverItem ? 'below' : 'above'
+          }`;
+          if (lastDragOverPositionRef.current === positionKey) {
+            return;
+          }
+          lastDragOverPositionRef.current = positionKey;
+
           onDragOver({
-            active,
-            over,
-            items,
+            source: { id: source.id },
+            target: target ? { id: target.id } : null,
+            items: currentItems,
             setItems,
             recentlyMovedToNewContainer,
-            memberToContainer,
+            memberToContainer: currentMemberToContainer,
             setMemberToContainer,
-          })
-        }
-        onDragEnd={({ active, over }) => {
+            isBelowOverItem,
+          });
+        }}
+        onDragEnd={(event) => {
+          if (!canEditTentInMode) return;
+          const { operation, canceled } = event;
+          const source = operation.source;
+          const target = operation.target;
+          if (!source) return;
+          if (canceled) {
+            handleDragCancel();
+            setTentsReorderFlag?.(false);
+            return;
+          }
+          const currentItems = itemsRef.current;
+          const currentMemberToContainer = memberToContainerRef.current;
           onDragEnd({
-            active,
-            over,
-            items,
+            source: { id: source.id },
+            target: target ? { id: target.id } : null,
+            items: currentItems,
             activeId,
             setItems,
             setActiveId,
             setContainers,
             getNextContainerId,
-            memberToContainer,
+            memberToContainer: currentMemberToContainer,
             setMemberToContainer,
           });
           setHasUnsavedChanges(true);
+          setActiveContainerId(null);
+          setOverContainerId(null);
+          activeContainerIdRef.current = null;
+          overContainerIdRef.current = null;
+          lastDragOverPositionRef.current = null;
         }}
-        cancelDrop={cancelDrop}
-        onDragCancel={() => {
-          if (!canEditTentInMode) return;
-          onDragCancel();
-          setTentsReorderFlag?.(false);
-        }}
-        modifiers={modifiers}
       >
-        <SortableContext
-          items={[...containers, PLACEHOLDER_ID]}
-          strategy={
-            vertical
-              ? verticalListSortingStrategy
-              : horizontalListSortingStrategy
-          }
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            pr: 0.5,
+            pb: 2,
+          }}
         >
-          <Box
-            sx={{
-              flex: 1,
-              minHeight: 0,
-              overflowY: "auto",
-              pr: 0.5,
-              pb: 2,
-            }}
-          >
-            <Grid container spacing={2}>
-              {containers.map((containerId) => (
-                <Grid key={containerId} size={{ xs: 12, md: 6, lg: 4 }}>
-                  {flexRender(table.getAllColumns()[0].columnDef.cell!, {
-                    row: { original: containerId },
-                    cell: { row: { original: containerId } },
-                  } as CellContext<UniqueIdentifier, unknown>)}
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        </SortableContext>
+          <Grid container spacing={2}>
+            {gridItems}
+          </Grid>
+        </Box>
 
         <Stack
-          direction={{ xs: "column", sm: "row" }}
+          direction={{ xs: 'column', sm: 'row' }}
           spacing={2}
           justifyContent="space-between"
           alignItems="center"
@@ -588,38 +730,34 @@ export default function RetreatTentsTable({
             onClick={handlePopoverOpen}
             sx={{ minWidth: 120 }}
           >
-            {filters.pageLimit || 8} {t("per-page")}
+            {filters.pageLimit || 8} {t('per-page')}
           </Button>
 
           <Popover
             open={open}
             anchorEl={anchorEl}
             onClose={handlePopoverClose}
-            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-            transformOrigin={{ vertical: "top", horizontal: "left" }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
           >
             <MenuList>
               {[4, 8, 12, 16].map((n) => (
                 <MenuItem key={n} onClick={() => handlePageLimitChange(n)}>
-                  <ListItemText primary={`${n} ${t("per-page")}`} />
+                  <ListItemText primary={`${n} ${t('per-page')}`} />
                 </MenuItem>
               ))}
             </MenuList>
           </Popover>
 
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography variant="body2" color="text.secondary" mr={2}>
-              {table.getState().pagination.pageIndex + 1}-
-              {Math.min(
-                table.getState().pagination.pageIndex +
-                  table.getState().pagination.pageSize,
-                total ?? 0
-              )}{" "}
-              {t("of-total", { total: total ?? 0 })}
+              {(page - 1) * pageLimit + 1}-
+              {Math.min(page * pageLimit, total ?? 0)}{' '}
+              {t('of-total', { total: total ?? 0 })}
             </Typography>
             <Pagination
-              count={table.getPageCount()}
-              page={table.getState().pagination.pageIndex + 1}
+              count={totalPages}
+              page={page}
               onChange={(_, page) => onFiltersChange?.({ page })}
               color="primary"
             />
@@ -627,19 +765,21 @@ export default function RetreatTentsTable({
         </Stack>
 
         {createPortal(
-          <DragOverlay adjustScale={adjustScale} dropAnimation={dropAnimation}>
-            {activeId
-              ? containers.includes(activeId)
-                ? renderContainerDragOverlay(activeId)
-                : renderSortableItemDragOverlay(activeId)
-              : null}
+          <DragOverlay>
+            {(source) =>
+              source
+                ? containers.includes(source.id)
+                  ? renderContainerDragOverlay(source.id)
+                  : renderSortableItemDragOverlay(source.id)
+                : null
+            }
           </DragOverlay>,
           document.body
         )}
         {trashable && activeId && !containers.includes(activeId) ? (
           <Trash id={TRASH_ID} />
         ) : null}
-      </DndContext>
+      </DragDropProvider>
 
       <Fade in={hasUnsavedChanges}>
         <Fab
@@ -647,7 +787,7 @@ export default function RetreatTentsTable({
           onClick={handleSaveReorder}
           disabled={!canEditTentInMode}
           sx={{
-            position: "absolute",
+            position: 'absolute',
             bottom: 24,
             right: 24,
             zIndex: 1000,
@@ -668,7 +808,7 @@ export default function RetreatTentsTable({
         style={getItemStyles({
           containerId: memberToContainer[id],
           overIndex: -1,
-          index: getIndex(id),
+          index: 0,
           value: meta?.name,
           isSorting: true,
           isDragging: true,
@@ -686,14 +826,14 @@ export default function RetreatTentsTable({
     const memberIds = items[containerId] || [];
     const tentMeta = tentsById[containerId];
     const label = tentMeta
-      ? t("card-label", { number: tentMeta.number })
-      : t("card-label", { number: containerId });
+      ? t('card-label', { number: tentMeta.number })
+      : t('card-label', { number: containerId });
 
     return (
       <Container
         label={label}
         columns={memberIds.length}
-        style={{ height: "100%" }}
+        style={{ height: '100%' }}
         shadow
         unstyled={false}
       >
@@ -738,115 +878,27 @@ export default function RetreatTentsTable({
 }
 
 function Trash({ id }: { id: UniqueIdentifier }) {
-  const { setNodeRef, isOver } = useDroppable({
-    id,
-  });
+  const { ref, isDropTarget } = useDroppable({ id });
 
   return (
     <div
-      ref={setNodeRef}
+      ref={ref}
       style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        position: "fixed",
-        left: "50%",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'fixed',
+        left: '50%',
         marginLeft: -150,
         bottom: 20,
         width: 300,
         height: 60,
         borderRadius: 5,
-        border: "1px solid",
-        borderColor: isOver ? "red" : "#DDD",
+        border: '1px solid',
+        borderColor: isDropTarget ? 'red' : '#DDD',
       }}
     >
       Drop here to delete
     </div>
   );
-}
-
-interface SortableItemProps {
-  containerId: UniqueIdentifier;
-  id: UniqueIdentifier;
-  value: string;
-  index: number;
-  handle: boolean;
-  disabled?: boolean;
-  style(args: {
-    value: UniqueIdentifier;
-    index: number;
-    overIndex: number;
-    isDragging: boolean;
-    containerId: UniqueIdentifier;
-    isSorting: boolean;
-    isDragOverlay: boolean;
-  }): React.CSSProperties;
-  getIndex(id: UniqueIdentifier): number;
-  wrapperStyle({ index }: { index: number }): React.CSSProperties;
-}
-
-function SortableItem({
-  disabled,
-  id,
-  index,
-  handle,
-  value,
-  style,
-  containerId,
-  getIndex,
-  wrapperStyle,
-}: SortableItemProps) {
-  const {
-    setNodeRef,
-    setActivatorNodeRef,
-    listeners,
-    isDragging,
-    isSorting,
-    over,
-    overIndex,
-    transform,
-    transition,
-  } = useSortable({
-    id,
-  });
-  const mounted = useMountStatus();
-  const mountedWhileDragging = isDragging && !mounted;
-  const computedStyle = style({
-    index,
-    value: id,
-    isDragging,
-    isSorting,
-    overIndex: over ? getIndex(over.id) : overIndex,
-    containerId,
-    isDragOverlay: false,
-  });
-  return (
-    <Item
-      ref={disabled ? undefined : setNodeRef}
-      value={value}
-      dragging={isDragging}
-      sorting={isSorting}
-      handle={handle}
-      handleProps={handle ? { ref: setActivatorNodeRef } : undefined}
-      index={index}
-      wrapperStyle={wrapperStyle({ index })}
-      style={computedStyle}
-      transition={transition}
-      transform={transform}
-      fadeIn={mountedWhileDragging}
-      listeners={listeners}
-    />
-  );
-}
-
-function useMountStatus() {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setIsMounted(true), 500);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
-  return isMounted;
 }
