@@ -6,14 +6,56 @@
     "home": "Início",
     "retreats": "Retiros",
     "tents": "Barracas",
-    "participants": "Participantes"
+    "participants": "Participantes",
+    "Tents": "Barracas",
+    "Relatórios": "Relatórios",
+    "Ajuda": "Ajuda",
+    "Pagamento": "Pagamento",
+    "Configurações": "Configurações",
+    "Usuários": "Usuários",
+    "Participant": "Participantes",
+    "Dashboard": "Dashboard",
+    "Retiros": "Retiros",
+    "Service-teams": "Equipes de Serviço",
+    "Families": "Famílias",
+    "Contemplations": "Contemplações",
+    "Family": "Família",
+    "Fiveminutescard": "Cartão de Cinco Minutos",
+    "Botafora": "Bota-fora",
+    "Ribbons": "Fitas",
+    "Forms": "Formulários",
+    "Service-team": "Equipe de Serviço",
+    "Perfil": "Perfil",
+    "Gestão de OutBox": "Gestão de OutBox",
+    "New": "Novo Relatório",
+    "No-contemplated": "Não Contemplados",
+    "Contemplated": "Contemplados",
+    "Service-unassigned": "Sem Equipe de Serviço",
+    "Service-confirmed": "Equipe de Serviço Confirmada",
+    "Generic": "Genérico",
+    "create": "Criar",
+    "edit": "Editar",
+    "new": "Novo",
+    "my-retreats": "Meus Retiros",
+    "users-create": "Novo Usuário",
+    "users-edit": "Editar Usuário",
+    "reports-edit": "Editar Relatório"
   },
   "notifications": {
     "configuration": "Configurations",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "unread": "Não Lido",
+    "all": "Todas",
+    "mark_all_as_read": "Marcar todos como lido",
+    "see_more": "Ver Mais",
+    "no_unread": "Sem notificações não lidas",
+    "close": "Fechar",
+    "no_notifications": "Sem notificações"
   },
   "userPage": {
-    "info": "userPage.info"
+    "info": "userPage.info",
+    "permissions": "Permissões",
+    "security": "Segurança"
   },
   "period": "Period",
   "reports-data": "Reports Data",
@@ -28,7 +70,8 @@
       "tab-label": "Contemplated"
     },
     "no-contemplated": {
-      "tab-label": "Not contemplated"
+      "tab-label": "Not contemplated",
+      "create-new-participant": "Adicionar Novo Participante"
     },
     "service": {
       "unassigned": {
@@ -63,6 +106,39 @@
           "fallback-name": "Service participant",
           "fallback-activity": "Service team"
         }
+      },
+      "confirmed": {
+        "tab-label": "Equipe de serviço confirmada",
+        "title": "Participantes de serviço confirmados",
+        "subtitle": "{count, plural, one {# participante confirmado} other {# participantes confirmados}} na equipe de serviço.",
+        "search-placeholder": "Buscar por nome, e-mail, cidade ou CPF",
+        "refresh": "Atualizar lista",
+        "refreshing": "Atualizando...",
+        "total-count": "{count, plural, one {# participante listado} other {# participantes listados}}",
+        "columns": {
+          "name": "Nome",
+          "email": "E-mail",
+          "city": "Cidade",
+          "cpf": "CPF",
+          "preferredSpaceName": "Espaço preferido"
+        },
+        "no-data": "Nenhum participante de serviço confirmado.",
+        "error": "Não foi possível carregar os participantes de serviço confirmados.",
+        "actions": {
+          "view": "Ver participante"
+        },
+        "modal-title": "Participante de serviço confirmado: {name}",
+        "errors": {
+          "missing-id": "Não foi possível identificar o participante selecionado."
+        },
+        "form": {
+          "submit-label": "Salvar alterações",
+          "success": "Participante de serviço atualizado com sucesso!",
+          "error": "Não foi possível atualizar o participante de serviço.",
+          "fetch-error": "Não foi possível carregar os dados do participante de serviço.",
+          "fallback-name": "Participante de serviço",
+          "fallback-activity": "Equipe de serviço"
+        }
       }
     }
   },
@@ -91,7 +167,10 @@
     "gender": {
       "male": "Male",
       "female": "Female",
-      "mixed": "Mixed"
+      "mixed": "Mixed",
+      "Male": "Masculina",
+      "Female": "Feminina",
+      "Mixed": "Mista"
     },
     "form": {
       "number": "Tent number",
@@ -101,7 +180,8 @@
       "notesPlaceholder": "Add important details about this tent",
       "cancel": "Cancel",
       "submit": "Create tent",
-      "submitting": "Creating..."
+      "submitting": "Creating...",
+      "notes-placeholder": "Anote detalhes importantes sobre essa barraca"
     },
     "bulkForm": {
       "startingNumber": "Starting number",
@@ -113,6 +193,26 @@
       "cancel": "Cancel",
       "submit": "Create tents",
       "submitting": "Creating..."
+    },
+    "lock": {
+      "title": "Bloqueio de Barracas"
+    },
+    "title": "Barraca {number}",
+    "add-participant-to-tent": "Adicionar Participante à Tenda",
+    "addParticipantToTent": "Adicionar Participante à Tenda",
+    "auto-assign": "Adicionar membros não alocados em tendas automaticamente",
+    "create-individual": "Cadastro individual",
+    "create-bulk": "Cadastro em lote",
+    "bulk-form": {
+      "number": "Número da barraca",
+      "gender": "Gênero",
+      "capacity": "Capacidade",
+      "note": "Nota",
+      "add-tent": "Adicionar barraca",
+      "create-tents": "Criar barracas",
+      "creating": "Criando...",
+      "success": "Barracas criadas com sucesso",
+      "error": "Erro ao criar barracas"
     }
   },
   "tent-details": {
@@ -135,8 +235,34 @@
     "gender": {
       "male": "Male",
       "female": "Female",
-      "mixed": "Mixed"
-    }
+      "mixed": "Mixed",
+      "Male": "Masculina",
+      "Female": "Feminina",
+      "Mixed": "Mista"
+    },
+    "remove": "Remover",
+    "confirm-remove-participant": "Remover participante?",
+    "participant-removed": "removido da barraca.",
+    "remove-error": "Não foi possível remover o participante. Tente novamente.",
+    "lock": {
+      "title": "Bloqueio de Barracas"
+    },
+    "createBulk": "Criar Barracas Em Lote",
+    "create-new-tent-bulk": "Criar Barracas em Lote",
+    "create-new-tent": "Criar nova Barraca",
+    "add-member-to-team": "Adicionar membro à Barraca",
+    "createIndividual": "Criar Tenda Individualmente",
+    "addParticipantToTent": "Adicionar Participante à Tenda",
+    "lock-tents": "Trancar Barracas",
+    "tent-configurations": "Configurações das Barracas",
+    "view": "Visualizar",
+    "load-error": "Erro ao carregar Barraca",
+    "assigned-count-label": "Alocados",
+    "active-label": "Ativo",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "delete": "Deletar Barraca",
+    "delete-tent": "Remoção de Barraca"
   },
   "draw-the-families": "Draw the families",
   "family-validation": {
@@ -166,7 +292,23 @@
     "member-count": "{count, plural, one {# member} other {# members}}",
     "no-members": "This family doesn't have members yet.",
     "close": "Close",
-    "no-leader": "No leader assigned"
+    "no-leader": "No leader assigned",
+    "delete": "Deletar Família",
+    "load-error": "Não foi possível carregar os dados da família.",
+    "family-color": "Cor da Família",
+    "send-messages": "Enviar Mensagens",
+    "delete-family": "Deletar Família",
+    "capacity-label": "Capacidade",
+    "composition-label": "Composição",
+    "male": "Homens",
+    "female": "Mulheres",
+    "family-locked": "Família bloqueada",
+    "alerts-title": "Alertas",
+    "group-info": "Informações do Grupo de WhatsApp",
+    "group-status": "Status do grupo",
+    "group-channel": "Canal",
+    "group-link": "Link do grupo",
+    "open-group": "Abrir grupo"
   },
   "service-team-details": {
     "confirmDelete": "Confirm removal",
@@ -182,28 +324,46 @@
       "color": "Tag color",
       "isActive": "Active team",
       "coordinator": "Coordinator",
-      "viceCoordinator": "Assistant coordinator"
+      "viceCoordinator": "Assistant coordinator",
+      "minPeople": "Número Mínimo de Membros",
+      "maxPeople": "Número Máximo de Membros",
+      "select-team": "Selecione uma equipe",
+      "role": "Função",
+      "select-members": "Selecione os membros:",
+      "team": "Equipe"
     },
     "sections": {
       "coordinator": "Service team coordinator",
       "vice-coordinator": "Service team assistant coordinator",
       "members": "Service team members",
       "viceCoordinator": "Assistant coordinator",
-      "general": "General information"
+      "general": "General information",
+      "add-members": "Adicionar Membros",
+      "summary": "Resumo"
     },
     "loading": "Loading...",
     "error": "Something went wrong",
     "labels": {
-      "memberCount": "{count, plural, one {# member} other {# members}}"
+      "memberCount": "{count, plural, one {# member} other {# members}}",
+      "members": "membros",
+      "members-to-add": "Membros a adicionar"
     },
     "placeholders": {
-      "selectMember": "Select members"
+      "selectMember": "Select members",
+      "memberCount": "{count, plural, one {# membro} other {# membros}}",
+      "members": "membros",
+      "members-to-add": "Membros a adicionar",
+      "search-members": "Procure por nome ou email..."
     },
     "messages": {
       "noMembers": "No members",
       "noDescription": "No description",
       "updateSuccess": "Service space updated successfully!",
-      "createSuccess": "Service space created successfully!"
+      "createSuccess": "Service space created successfully!",
+      "adding": "Adicionando...",
+      "members-added-successfully": "Membros adicionados com sucesso",
+      "loading-members": "Carregando membros...",
+      "no-members-available": "Nenhum membro disponível"
     },
     "hints": {
       "memberLimit": "Use minimum and maximum values to control the team size."
@@ -232,27 +392,44 @@
         "globalUnlocked": "All teams have been unlocked.",
         "disableGlobal": "Disable the global lock to manage teams individually.",
         "spaceLocked": "Service team \"{name}\" locked.",
-        "spaceUnlocked": "Service team \"{name}\" unlocked."
+        "spaceUnlocked": "Service team \"{name}\" unlocked.",
+        "noMembers": "Sem Membros",
+        "noDescription": "Sem Descrição",
+        "updateSuccess": "Atualização do espaço de serviço realizada com sucesso!",
+        "createSuccess": "Equipe de serviço criada com sucesso!",
+        "adding": "Adicionando...",
+        "members-added-successfully": "Membros adicionados com sucesso",
+        "loading-members": "Carregando membros...",
+        "no-members-available": "Nenhum membro disponível"
       },
       "errors": {
         "fetch": "Unable to load lock status.",
         "global": "Unable to update the global lock.",
-        "individual": "Unable to update the team lock."
+        "individual": "Unable to update the team lock.",
+        "update": "Erro ao atualizar o espaço de serviço",
+        "create": "Erro ao criar o espaço de serviço",
+        "load-members": "Erro ao carregar membros",
+        "add-members": "Erro ao adicionar membros",
+        "maxLessThanMin": "Máximo de pessoas não pode ser menor que o mínimo"
       },
       "buttons": {
         "cancel": "Cancel",
         "finish": "Done"
-      }
+      },
+      "load-error": "Erro ao carregar barracas"
     },
     "actions": {
       "close": "Close",
       "cancel": "Cancel",
       "save": "Save",
-      "edit": "Edit"
+      "edit": "Edit",
+      "add-members": "Adicionando Membros"
     },
     "errors": {
       "update": "Unable to update the service space",
-      "create": "Unable to create the service space"
+      "create": "Unable to create the service space",
+      "add-members": "Erro ao adicionar membros",
+      "load-members": "Erro ao carregar membros"
     },
     "viceCoordinator": {
       "unassigned": "Unassigned"
@@ -262,7 +439,34 @@
     },
     "create-new-team": "Create new team",
     "add-new-participant": "Add new participant",
-    "add-participant-in-service-team": "Add participant to service team"
+    "add-participant-in-service-team": "Add participant to service team",
+    "title": "Espaço de serviço {space}",
+    "service-space-configurations": "Configurações das equipes de serviço",
+    "delete-service-team-success": "Equipe de serviço \"{name}\" deletada com sucesso!",
+    "delete-service-team-warning": "Ao deletar a equipe de serviço \"{name}\", todos os membros serão desalocados da equipe.",
+    "delete-service-team-confirmation": "Tem certeza que deseja continuar?",
+    "delete-service-team": "Deletar Equipe",
+    "cancel": "Cancelar",
+    "deleting": "Deletando...",
+    "roles": {
+      "1": "Coordenador",
+      "2": "Vice-Coordenador",
+      "coordinator": "Coordenador Da Equipe de Serviço",
+      "viceCoordinator": "Vice-Coordenador da Equipe de Serviço",
+      "member": "Membro"
+    },
+    "validation": {
+      "all-good": "Todos os requisitos foram atendidos",
+      "issues-found": "Problemas encontrados em {space}",
+      "missing-coordinator": "Coordenador não atribuído",
+      "missing-vice-coordinator": "Vice-coordenador não atribuído",
+      "no-members": "Nenhum membro atribuído",
+      "missing-members": "Sem Membros"
+    },
+    "helpers": {
+      "select-members": "Selecione um ou mais membros"
+    },
+    "add-member-to-team": "Adicionar Membro à Equipe de Serviço"
   },
   "family-report-refresh": "Refresh data",
   "family-report-refresh-loading": "Refreshing...",
@@ -358,5 +562,299 @@
   "ribbon-report-total": "Participants listed: {count}",
   "ribbon-report-empty": "No participants found.",
   "ribbon-report-default-file": "participant-ribbons.pdf",
-  "ribbon-report-file-name": "ribbons-{retreat}.pdf"
+  "ribbon-report-file-name": "ribbons-{retreat}.pdf",
+  "phone": "Phone",
+  "settings": {
+    "title": "Settings",
+    "description": "Customize your experience by adjusting theme and display language.",
+    "theme": {
+      "title": "Theme",
+      "description": "Choose between light or dark mode for the interface.",
+      "options": {
+        "system": "System",
+        "light": "Light",
+        "dark": "Dark"
+      }
+    },
+    "language": {
+      "title": "Language",
+      "description": "Select your preferred interface language.",
+      "label": "Language",
+      "current": "Current language:"
+    },
+    "languages": {
+      "ptBR": "Portuguese (Brazil)",
+      "enUS": "English",
+      "es": "Spanish"
+    }
+  },
+  "error": "Algo deu errado",
+  "periodStart": "Data de Início",
+  "periodEnd": "Data de Fim",
+  "retreat": "Retiro",
+  "date": "Data",
+  "toClose": "Fechar",
+  "cleanUp": "Limpar",
+  "apply": "Aplicar",
+  "endDate": "Data de Fim",
+  "retreats-families": "Familias do Retiro",
+  "users": {
+    "title": "Usuários"
+  },
+  "new-report": "Novo Relatório",
+  "report-data": "Dados do Relatório",
+  "overview": "Visão Geral",
+  "create-new-family": "Criar Nova Família",
+  "send-message-to-family": "Enviar mensagem à família",
+  "add-participant-in-family": "Adicionar Participante na Família",
+  "family-config": "Configurações das Famílias",
+  "creating": "Criando",
+  "create-family": "Criar Família",
+  "family-name": "Nome da família",
+  "cancel": "Cancelar",
+  "family-configuration": "Configuração das Famílias",
+  "family-config-description": "Configure o tamanho padrão e máximo das famílias do retiro.",
+  "current-config": "Configuração Atual",
+  "current-families": "Famílias Atuais",
+  "current-participants": "Participantes Atuais",
+  "default-family-size": "Tamanho Padrão da Família",
+  "max-family-size": "Tamanho Máximo da Família",
+  "members": "membros",
+  "preview-config": "Pré-visualização da Configuração",
+  "default-size": "Tamanho padrão",
+  "maximum-size": "Tamanho máximo",
+  "estimated-families": "Famílias estimadas",
+  "saving": "Salvando",
+  "save-configuration": "Salvar Configuração",
+  "add-participant-description": "Selecione uma família e os participantes que deseja adicionar.",
+  "select-family": "Selecionar Família",
+  "family-current-members": "Membros atuais da família",
+  "participant-role": "Função do Participante",
+  "member": "Membro",
+  "leader": "Líder",
+  "select-participants": "Selecionar Participantes",
+  "search-participants": "Buscar participantes",
+  "participants-helper-text": "Digite para buscar participantes por nome ou email",
+  "no-participants-available": "Nenhum participante disponível",
+  "family-full-warning": "Esta família já atingiu o limite máximo de membros",
+  "adding": "Adicionando",
+  "add-participants": "Adicionar Participantes",
+  "subject": "Assunto",
+  "message-subject-placeholder": "Avisos gerais para enviar aos grupos das famílias no WhatsApp.",
+  "message": "Mensagem",
+  "message-content-placeholder": "Digite aqui a mensagem.",
+  "send-to-all-families": "Enviar para todas as famílias",
+  "select-families": "Selecionar famílias",
+  "select-at-least-one-family": "Selecione ao menos uma família",
+  "sending": "Enviando",
+  "send-message": "Enviar Mensagem",
+  "message-type": "Tipo de Mensagem",
+  "notification": "Notificação",
+  "email": "E-mail",
+  "sms": "SMS",
+  "send-message-description": "Envie uma mensagem para as famílias selecionadas.",
+  "lock-families": "Bloquear Famílias",
+  "reset-families": "Resetar Famílias",
+  "reset-families-warning-title": "⚠️ ATENÇÃO: Esta ação é irreversível!",
+  "reset-families-warning-description": "Você está prestes a deletar TODAS as famílias. Esta ação NÃO pode ser desfeita. Os membros voltarão ao estado de \"sem família\".",
+  "current-statistics": "Estatísticas Atuais",
+  "total-families": "Total de famílias",
+  "total-members": "Total de membros",
+  "locked-families": "Famílias trancadas",
+  "confirm-reset-action": "Confirme que você entende as consequências",
+  "confirm-understand-reset": "Eu entendo que todas as famílias e membros serão permanentemente deletados",
+  "confirm-action-permanent": "Eu confirmo que esta ação é permanente e não pode ser desfeita",
+  "locked-families-detected": "Existem {count} {count, plural, one {família trancada} other {famílias trancadas}}",
+  "confirm-force-reset-locked": "Eu quero deletar também as famílias trancadas",
+  "please-confirm-all-checkboxes": "Por favor, confirme todos os campos necessários",
+  "confirm-force-locked-families": "Por favor, confirme que deseja deletar as famílias trancadas",
+  "families-reset-success": "{familiesDeleted} {familiesDeleted, plural, one {família deletada} other {famílias deletadas}} e {membersDeleted} {membersDeleted, plural, one {membro removido} other {membros removidos}}",
+  "error-resetting-families": "Erro ao resetar famílias",
+  "resetting": "Resetando...",
+  "loading-lottery-preview": "Carregando preview da loteria...",
+  "lottery-preview-title": "Preview do Sorteio",
+  "lottery-preview-description": "Confira os participantes que serão selecionados no sorteio antes de confirmar.",
+  "male-participants": "Participantes Masculinos",
+  "female-participants": "Participantes Femininas",
+  "of-capacity": "da capacidade",
+  "total-selected": "Total Selecionado",
+  "total-capacity": "capacidade total",
+  "selected-participants-list": "Lista de Participantes Selecionados",
+  "no-participants-selected": "Nenhum participante foi selecionado no sorteio.",
+  "participant-id": "ID do Participante",
+  "gender": "Gênero",
+  "male": "Masculino",
+  "female": "Feminino",
+  "committing": "Confirmando...",
+  "confirm-lottery": "Confirmar Sorteio",
+  "lottery-committed-success": "{total} {total, plural, one {participante selecionado} other {participantes selecionados}} com sucesso!",
+  "family-report-status-confirmed": "Confirmado",
+  "family-report-status-registered": "Inscrito",
+  "family-report-status-attended": "Participou",
+  "family-report-status-cancelled": "Cancelado",
+  "service-team-a": {
+    "minMembers": "Número Mínimo de Membros",
+    "coordinator": "Coordenador"
+  },
+  "create-new-team": "Criar Novo Time",
+  "service-team": {
+    "label": "Equipe de Serviço",
+    "actions": {
+      "cancel": "Cancelar"
+    },
+    "no-members": "Essa equipe ainda não possui membros",
+    "team-label": "Equipe {name}",
+    "roles": {
+      "member": "Membro",
+      "support": "Apoio",
+      "coordinator": "Coordenador",
+      "viceCoordinator": "Vice-coordenador"
+    },
+    "addServant": {
+      "formTitle": "Adicionar servidores a uma equipe de serviço",
+      "selectServiceSpace": "Selecionar equipe de serviço",
+      "currentTeamSize": "Membros atuais: {count}",
+      "memberRole": "Função do participante",
+      "selectParticipants": "Selecionar servidores",
+      "loadingParticipants": "Carregando servidores",
+      "searchPlaceholder": "Buscar servidores",
+      "helperText": "Você pode selecionar vários servidores para adicionar",
+      "noParticipants": "Nenhum participante disponível",
+      "minMembersWarning": "Esta equipe ainda precisa de pelo menos {remaining} membro(s) para atingir o mínimo",
+      "maxMembersWarning": "Esta equipe atingiu a capacidade máxima",
+      "selectTeamHint": "Selecione uma equipe para ver os integrantes atuais e limites",
+      "submit": "Adicionar servidores",
+      "submitting": "Adicionando..."
+    },
+    "save-reorder": "Salvar Reordenação das Equipes"
+  },
+  "retreat-outbox": {
+    "page-title": "Fila de mensagens (Outbox)",
+    "fetch-error": "Não foi possível carregar a fila de mensagens.",
+    "detail-modal-title": "Mensagem {id}",
+    "filters": {
+      "status": "Status",
+      "processed": "Processado",
+      "type": "Tipo",
+      "type-placeholder": "Ex.: email, sms",
+      "startDate": "Data inicial",
+      "endDate": "Data final",
+      "reset": "Limpar filtros"
+    },
+    "columns": {
+      "id": "ID",
+      "type": "Tipo",
+      "status": "Status",
+      "attempts": "Tentativas",
+      "createdAt": "Criada em",
+      "processedAt": "Processada em",
+      "actions": "Ações"
+    },
+    "table": {
+      "title": "Mensagens na fila",
+      "subtitle": "Acompanhe o processamento de notificações.",
+      "actions": {
+        "view": "Ver detalhes"
+      },
+      "error": "Erro ao carregar mensagens.",
+      "empty": "Nenhuma mensagem encontrada."
+    },
+    "pending": "Pendentes",
+    "pending-helper": "Mensagens aguardando processamento.",
+    "processed": "Processadas",
+    "processed-helper": "Mensagens finalizadas com sucesso.",
+    "failed": "Com erro",
+    "failed-helper": "Mensagens que precisam de intervenção.",
+    "last-run": "Última execução",
+    "last-success": "Sem registros",
+    "requeue-success": "Mensagem reenfileirada.",
+    "requeue-error": "Não foi possível reenfileirar a mensagem.",
+    "loading-detail": "Carregando detalhes da mensagem...",
+    "detail-title": "Mensagem {id}",
+    "detail-subtitle": "Status {status} • {attempts} tentativa(s)",
+    "requeue": "Reenfileirar",
+    "status": "Status",
+    "type": "Tipo",
+    "attempts": "Tentativas",
+    "max-attempts": "Máx. tentativas",
+    "created-at": "Criada em",
+    "processed-at": "Processada em",
+    "payload": "Payload",
+    "last-error": "Último erro",
+    "no-error": "Nenhum erro registrado.",
+    "history": "Histórico",
+    "no-history": "Nenhum evento registrado.",
+    "close": "Fechar",
+    "withErrors": "Com Erros",
+    "oldest-pending": "Processamento mais velho pendente."
+  },
+  "region": "Região",
+  "close": "Fechar",
+  "send-messages": "Enviar Mensagens",
+  "number-of-families": "Número de Famílias",
+  "clear-existing-families": "Limpar famílias existentes",
+  "family-capacity": "Capacidade da Família",
+  "fill-existing-first": "Preencher as famílias existentes primeiro",
+  "search-by-name-or-email": "Encontre pelo nome ou e-mail",
+  "family-deleted-successfully": "Família Deletada com Sucesso!",
+  "delete-family-warning": "Ao deletar essa família, os membros voltam ao estado de \"sem família\"",
+  "delete-family-confirmation": "Tem certeza que deseja continuar?",
+  "deleting": "Deletando",
+  "delete-family": "Deletar Família",
+  "tent-current-members": "Membros atuais",
+  "tent-full-warning": "Barraca Cheia!",
+  "select-tent": "Selecione a Barraca",
+  "tent": {
+    "tent-deleted-successfully": "Barraca Deletada com Sucesso",
+    "delete-tent-warning": "Você tem certeza que deseja deletar esta barraca?",
+    "cancel": "Cancelar",
+    "deleting": "Deletando",
+    "delete-tent": "Deletar Barraca",
+    "delete-tent-confirmation": "Confirmaçção de deleção da barraca"
+  },
+  "participants-added-successfully": "Participante adicionado com sucesso!",
+  "error-adding-participants": "Erro ao adicionar participantes",
+  "creat-tent-form": {},
+  "create-tent-form": {
+    "tent-number": "Número da Barraca",
+    "tent-number-placeholder": "Ex: 1, 2, 3...",
+    "tent-category": "Categoria",
+    "category-male": "Masculina",
+    "category-female": "Feminina",
+    "tent-capacity": "Capacidade",
+    "tent-capacity-placeholder": "Ex: 5",
+    "tent-notes": "Notas",
+    "tent-notes-placeholder": "Adicione observações sobre a barraca...",
+    "cancel": "Cancelar",
+    "creating": "Criando...",
+    "create-tent": "Criar Barraca",
+    "success": "Barraca criada com sucesso!",
+    "error": "Erro ao criar barraca."
+  },
+  "Male": "Masculino",
+  "Female": "Feminino",
+  "name": "Nome",
+  "profile": {
+    "name": "Nome",
+    "email": "E-mail",
+    "phone": "Telefone",
+    "picture": {
+      "description": "Clique na foto para atualizar.",
+      "change": "Trocar Foto"
+    }
+  },
+  "menu": {
+    "dashboard": "Dashboard",
+    "reports": "Relatórios",
+    "user-management": "Gestão de Usuários",
+    "retreat-management": "Gestão de Retiros",
+    "outbox": "Gestão de OutBox",
+    "profile-management": "Gestão de Perfil",
+    "settings": "Configurações",
+    "empty": {
+      "title": "Nenhum menu disponível",
+      "description": "Entre em contato com o administrador"
+    }
+  },
+  "not-informed": "Não informado"
 }

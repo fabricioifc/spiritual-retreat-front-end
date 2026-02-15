@@ -140,7 +140,8 @@
       "notes": "Notas",
       "notesPlaceholder": "Ej.: Carpas extra para llegadas tardías",
       "submit": "Registrar en lote",
-      "submitting": "Registrando..."
+      "submitting": "Registrando...",
+      "cancel": "Cancelar"
     }
   },
   "tent-details": {
@@ -224,7 +225,43 @@
     },
     "create-new-team": "Crear nuevo equipo",
     "add-new-participant": "Agregar nuevo participante",
-    "add-participant-in-service-team": "Agregar participante al equipo de servicio"
+    "add-participant-in-service-team": "Agregar participante al equipo de servicio",
+    "lock": {
+      "title": "Bloquear equipos de servicio",
+      "button": "Bloquear equipos",
+      "alerts": {
+        "intro": "Bloquee los equipos de servicio para evitar cambios durante el evento.",
+        "globalActive": "El bloqueo global está activo. Desactívelo para gestionar equipos individualmente."
+      },
+      "global": {
+        "title": "bloqueo global",
+        "active": "Todos los equipos están bloqueados para editar.",
+        "inactive": "Bloquea o desbloquea todos los equipos a la vez.",
+        "lockedLabel": "bloqueado",
+        "unlockedLabel": "desbloqueado"
+      },
+      "individual": {
+        "title": "cerradura individual",
+        "summary": "{bloqueado} / {total} bloqueado",
+        "members": "{count, plural, one {# miembro} otro {# miembros}}"
+      },
+      "messages": {
+        "globalLocked": "Todos los equipos han sido bloqueados.",
+        "globalUnlocked": "Todos los equipos han sido desbloqueados.",
+        "disableGlobal": "Desactive el bloqueo global para gestionar equipos individualmente.",
+        "spaceLocked": "Equipo de servicio \"{name}\" bloqueado.",
+        "spaceUnlocked": "Equipo de servicio \"{name}\" desbloqueado."
+      },
+      "errors": {
+        "fetch": "No se puede cargar el estado de bloqueo.",
+        "global": "No se puede actualizar el bloqueo global.",
+        "individual": "No se puede actualizar el bloqueo del equipo."
+      },
+      "buttons": {
+        "cancel": "Cancelar",
+        "finish": "Hecho"
+      }
+    }
   },
   "family-report-refresh": "Actualizar datos",
   "family-report-refresh-loading": "Actualizando...",
@@ -320,5 +357,31 @@
   "ribbon-report-total": "Participantes listados: {count}",
   "ribbon-report-empty": "No se encontraron participantes.",
   "ribbon-report-default-file": "cintas-participantes.pdf",
-  "ribbon-report-file-name": "cintas-{retreat}.pdf"
+  "ribbon-report-file-name": "cintas-{retreat}.pdf",
+  "startDate": "Fecha de inicio",
+  "phone": "Teléfono",
+  "settings": {
+    "title": "Ajustes",
+    "description": "Personaliza tu experiencia ajustando el tema y el idioma de visualización.",
+    "theme": {
+      "title": "Tema",
+      "description": "Elija entre el modo claro u oscuro para la interfaz.",
+      "options": {
+        "system": "Sistema",
+        "light": "Luz",
+        "dark": "Oscuro"
+      }
+    },
+    "language": {
+      "title": "Idioma",
+      "description": "Seleccione su idioma de interfaz preferido.",
+      "label": "Idioma",
+      "current": "Idioma actual:"
+    },
+    "languages": {
+      "ptBR": "Portugués (Brasil)",
+      "enUS": "Inglés",
+      "es": "Español"
+    }
+  }
 }

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 
+import { useTranslations } from 'next-intl';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -85,7 +86,8 @@ const truncateText = (
  * Centraliza toda a lógica de resolução de labels para breadcrumbs
  */
 const resolveBreadcrumbLabel = (
-  context: BreadcrumbResolverContext
+  context: BreadcrumbResolverContext,
+  getLabel: (key: string, fallback: string) => string
 ): BreadcrumbResolverResult => {
   const { segment, previousSegment } = context;
 
@@ -102,51 +104,96 @@ const resolveBreadcrumbLabel = (
   > = {
     // Quando o segmento anterior for "retreats"
     retreats: {
-      families: { label: 'Famílias', icon: 'mdi:account-group' },
-      participants: { label: 'Participantes', icon: 'mdi:account-multiple' },
-      contemplations: { label: 'Contemplações', icon: 'mdi:meditation' },
-      tents: { label: 'Barracas', icon: 'mdi:tent' },
+      families: {
+        label: getLabel('breadcrumbs.Families', 'Famílias'),
+        icon: 'mdi:account-group',
+      },
+      participants: {
+        label: getLabel('breadcrumbs.participants', 'Participantes'),
+        icon: 'mdi:account-multiple',
+      },
+      contemplations: {
+        label: getLabel('breadcrumbs.Contemplations', 'Contemplações'),
+        icon: 'mdi:meditation',
+      },
+      tents: {
+        label: getLabel('breadcrumbs.Tents', 'Barracas'),
+        icon: 'mdi:tent',
+      },
       'service-teams': {
-        label: 'Equipes de Serviço',
+        label: getLabel('breadcrumbs.Service-teams', 'Equipes de Serviço'),
         icon: 'mdi:account-hard-hat',
       },
       'service-team': {
-        label: 'Equipe de Serviço',
+        label: getLabel('breadcrumbs.Service-team', 'Equipe de Serviço'),
         icon: 'mdi:account-hard-hat',
       },
-      forms: { label: 'Formulários', icon: 'mdi:form-select' },
-      ribbons: { label: 'Fitas', icon: 'mdi:ribbon' },
-      botafora: { label: 'Bota-fora', icon: 'mdi:party-popper' },
-      fiveminutescard: { label: 'Cartão de 5 Minutos', icon: 'mdi:card-text' },
-      payment: { label: 'Pagamento', icon: 'mdi:credit-card' },
+      forms: {
+        label: getLabel('breadcrumbs.Forms', 'Formulários'),
+        icon: 'mdi:form-select',
+      },
+      ribbons: {
+        label: getLabel('breadcrumbs.Ribbons', 'Fitas'),
+        icon: 'mdi:ribbon',
+      },
+      botafora: {
+        label: getLabel('breadcrumbs.Botafora', 'Bota-fora'),
+        icon: 'mdi:party-popper',
+      },
+      fiveminutescard: {
+        label: getLabel('breadcrumbs.Fiveminutescard', 'Cartão de 5 Minutos'),
+        icon: 'mdi:card-text',
+      },
+      payment: {
+        label: getLabel('breadcrumbs.Pagamento', 'Pagamento'),
+        icon: 'mdi:credit-card',
+      },
     },
     // Quando o segmento anterior for "users"
     users: {
-      create: { label: 'Novo Usuário', icon: 'mdi:account-plus' },
-      edit: { label: 'Editar Usuário', icon: 'mdi:account-edit' },
+      create: {
+        label: getLabel('breadcrumbs.users-create', 'Novo Usuário'),
+        icon: 'mdi:account-plus',
+      },
+      edit: {
+        label: getLabel('breadcrumbs.users-edit', 'Editar Usuário'),
+        icon: 'mdi:account-edit',
+      },
     },
     // Quando o segmento anterior for "reports"
     reports: {
-      new: { label: 'Novo Relatório', icon: 'mdi:file-plus' },
-      edit: { label: 'Editar Relatório', icon: 'mdi:file-edit' },
+      new: {
+        label: getLabel('breadcrumbs.New', 'Novo Relatório'),
+        icon: 'mdi:file-plus',
+      },
+      edit: {
+        label: getLabel('breadcrumbs.reports-edit', 'Editar Relatório'),
+        icon: 'mdi:file-edit',
+      },
     },
   };
 
   const hierarchicalRoutes: Record<string, { label: string; icon: string }> = {
     'retreats/contemplations/contemplated': {
-      label: 'Contemplados',
+      label: getLabel('breadcrumbs.Contemplated', 'Contemplados'),
       icon: 'mdi:meditation',
     },
     'retreats/contemplations/no-contemplated': {
-      label: 'Não Contemplados',
+      label: getLabel('breadcrumbs.No-contemplated', 'Não Contemplados'),
       icon: 'mdi:check-circle',
     },
     'retreats/contemplations/service-unassgined': {
-      label: 'Sem Equipe de Serviço',
+      label: getLabel(
+        'breadcrumbs.Service-unassigned',
+        'Sem Equipe de Serviço'
+      ),
       icon: 'mdi:account-hard-hat',
     },
     'retreats/contemplations/service-confirmed': {
-      label: 'Equipe de Serviço Confirmada',
+      label: getLabel(
+        'breadcrumbs.Service-confirmed',
+        'Equipe de Serviço Confirmada'
+      ),
       icon: 'mdi:account-check',
     },
   };
@@ -168,27 +215,60 @@ const resolveBreadcrumbLabel = (
 
   // ===== REGRA 3: Rotas específicas (independente do contexto) =====
   const specificRoutes: Record<string, { label: string; icon: string }> = {
-    families: { label: 'Famílias', icon: 'mdi:account-group' },
-    participants: { label: 'Participantes', icon: 'mdi:account-multiple' },
-    contemplations: { label: 'Contemplações', icon: 'mdi:meditation' },
-    tents: { label: 'Barracas', icon: 'mdi:tent' },
+    families: {
+      label: getLabel('breadcrumbs.Families', 'Famílias'),
+      icon: 'mdi:account-group',
+    },
+    participants: {
+      label: getLabel('breadcrumbs.participants', 'Participantes'),
+      icon: 'mdi:account-multiple',
+    },
+    contemplations: {
+      label: getLabel('breadcrumbs.Contemplations', 'Contemplações'),
+      icon: 'mdi:meditation',
+    },
+    tents: {
+      label: getLabel('breadcrumbs.Tents', 'Barracas'),
+      icon: 'mdi:tent',
+    },
     'service-teams': {
-      label: 'Equipes de Serviço',
+      label: getLabel('breadcrumbs.Service-teams', 'Equipes de Serviço'),
       icon: 'mdi:account-hard-hat',
     },
     'service-team': {
-      label: 'Equipe de Serviço',
+      label: getLabel('breadcrumbs.Service-team', 'Equipe de Serviço'),
       icon: 'mdi:account-hard-hat',
     },
-    forms: { label: 'Formulários', icon: 'mdi:form-select' },
-    ribbons: { label: 'Fitas', icon: 'mdi:ribbon' },
-    botafora: { label: 'Bota-fora', icon: 'mdi:party-popper' },
-    fiveminutescard: { label: 'Cartão de 5 Minutos', icon: 'mdi:card-text' },
-    generic: { label: 'Genérico', icon: 'mdi:folder' },
-    family: { label: 'Família', icon: 'mdi:account-group' },
-    create: { label: 'Criar', icon: 'mdi:plus' },
-    edit: { label: 'Editar', icon: 'mdi:pencil' },
-    new: { label: 'Novo', icon: 'mdi:plus' },
+    forms: {
+      label: getLabel('breadcrumbs.Forms', 'Formulários'),
+      icon: 'mdi:form-select',
+    },
+    ribbons: {
+      label: getLabel('breadcrumbs.Ribbons', 'Fitas'),
+      icon: 'mdi:ribbon',
+    },
+    botafora: {
+      label: getLabel('breadcrumbs.Botafora', 'Bota-fora'),
+      icon: 'mdi:party-popper',
+    },
+    fiveminutescard: {
+      label: getLabel('breadcrumbs.Fiveminutescard', 'Cartão de 5 Minutos'),
+      icon: 'mdi:card-text',
+    },
+    generic: {
+      label: getLabel('breadcrumbs.Generic', 'Genérico'),
+      icon: 'mdi:folder',
+    },
+    family: {
+      label: getLabel('breadcrumbs.Family', 'Família'),
+      icon: 'mdi:account-group',
+    },
+    create: {
+      label: getLabel('breadcrumbs.create', 'Criar'),
+      icon: 'mdi:plus',
+    },
+    edit: { label: getLabel('breadcrumbs.edit', 'Editar'), icon: 'mdi:pencil' },
+    new: { label: getLabel('breadcrumbs.new', 'Novo'), icon: 'mdi:plus' },
   };
 
   if (specificRoutes[segment]) {
@@ -200,10 +280,9 @@ const resolveBreadcrumbLabel = (
 };
 
 // Configuração das rotas baseada no menuConfig e ROUTES
-const getRouteConfig = (): Record<
-  string,
-  { label: string; icon: string; parent?: string }
-> => {
+const getRouteConfig = (
+  getLabel: (key: string, fallback: string) => string
+): Record<string, { label: string; icon: string; parent?: string }> => {
   const config: Record<
     string,
     { label: string; icon: string; parent?: string }
@@ -219,19 +298,43 @@ const getRouteConfig = (): Record<
 
   // Adicionar rotas específicas com variações de path
   const additionalRoutes = {
-    '/': { label: 'Home', icon: 'lucide:home' },
-    '/users': { label: 'Usuários', icon: 'solar:user-bold-duotone' },
-    '/retreats': { label: 'Retiros', icon: 'material-symbols:temple-buddhist' },
-    '/profile': { label: 'Perfil', icon: 'material-symbols:person' },
-    '/settings': { label: 'Configurações', icon: 'material-symbols:settings' },
-    '/my-retreats': {
-      label: 'Meus Retiros',
+    '/': { label: getLabel('breadcrumbs.home', 'Home'), icon: 'lucide:home' },
+    '/users': {
+      label: getLabel('breadcrumbs.Usuários', 'Usuários'),
+      icon: 'solar:user-bold-duotone',
+    },
+    '/retreats': {
+      label: getLabel('breadcrumbs.Retiros', 'Retiros'),
       icon: 'material-symbols:temple-buddhist',
     },
-    '/payment': { label: 'Pagamento', icon: 'lucide:credit-card' },
-    '/reports': { label: 'Relatórios', icon: 'lucide:bar-chart' },
-    '/help': { label: 'Ajuda', icon: 'lucide:help-circle' },
-    '/config': { label: 'Configurações', icon: 'material-symbols:settings' },
+    '/profile': {
+      label: getLabel('breadcrumbs.Perfil', 'Perfil'),
+      icon: 'material-symbols:person',
+    },
+    '/settings': {
+      label: getLabel('breadcrumbs.Configurações', 'Configurações'),
+      icon: 'material-symbols:settings',
+    },
+    '/my-retreats': {
+      label: getLabel('breadcrumbs.my-retreats', 'Meus Retiros'),
+      icon: 'material-symbols:temple-buddhist',
+    },
+    '/payment': {
+      label: getLabel('breadcrumbs.Pagamento', 'Pagamento'),
+      icon: 'lucide:credit-card',
+    },
+    '/reports': {
+      label: getLabel('breadcrumbs.Relatórios', 'Relatórios'),
+      icon: 'lucide:bar-chart',
+    },
+    '/help': {
+      label: getLabel('breadcrumbs.Ajuda', 'Ajuda'),
+      icon: 'lucide:help-circle',
+    },
+    '/config': {
+      label: getLabel('breadcrumbs.Configurações', 'Configurações'),
+      icon: 'material-symbols:settings',
+    },
   };
 
   Object.entries(additionalRoutes).forEach(([path, config_item]) => {
@@ -331,6 +434,7 @@ const BreadcrumbLabel = ({
 
 const Breadcrumbs: React.FC = () => {
   const pathname = usePathname();
+  const t = useTranslations();
   const theme = useTheme();
   const isXs = useMediaQuery(theme.breakpoints.only('xs'));
   const isSm = useMediaQuery(theme.breakpoints.only('sm'));
@@ -349,7 +453,12 @@ const Breadcrumbs: React.FC = () => {
     noBreadCrumbs,
   } = useBreadCrumbs();
 
-  const routeConfig = useMemo(() => getRouteConfig(), []);
+  const getLabel = useCallback(
+    (key: string, fallback: string) => (t.has(key) ? t(key) : fallback),
+    [t]
+  );
+
+  const routeConfig = useMemo(() => getRouteConfig(getLabel), [getLabel]);
 
   // Gerar breadcrumbs baseado no pathname atual
   const breadcrumbs = useMemo((): BreadcrumbItem[] => {
@@ -376,7 +485,7 @@ const Breadcrumbs: React.FC = () => {
         isLast,
       };
 
-      const resolved = resolveBreadcrumbLabel(resolverContext);
+      const resolved = resolveBreadcrumbLabel(resolverContext, getLabel);
 
       // Se o resolver retornou skip: true, pular este segmento
       if (resolved?.skip) {
@@ -416,7 +525,7 @@ const Breadcrumbs: React.FC = () => {
     });
 
     return items;
-  }, [pathname, routeConfig]);
+  }, [pathname, routeConfig, getLabel]);
 
   // Breadcrumbs a serem exibidos (em mobile, só os 2 últimos)
   const displayBreadcrumbs = useMemo(() => {

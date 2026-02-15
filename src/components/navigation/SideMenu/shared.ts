@@ -12,6 +12,7 @@ export type MenuPermission = {
 export type MenuItem = {
   id: string;
   label: string;
+  labelKey?: string;
   icon: string;
   path: string;
   access: MenuPermission;
@@ -23,6 +24,7 @@ export const menuConfig: MenuItem[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
+    labelKey: 'menu.dashboard',
     icon: 'material-symbols:dashboard',
     path: '/dashboard',
     access: {
@@ -35,6 +37,7 @@ export const menuConfig: MenuItem[] = [
   {
     id: 'reports',
     label: 'Relatórios',
+    labelKey: 'menu.reports',
     icon: 'lucide:bar-chart',
     path: '/reports',
     access: {
@@ -47,6 +50,7 @@ export const menuConfig: MenuItem[] = [
   {
     id: 'user-management',
     label: 'Gestão de Usuários',
+    labelKey: 'menu.user-management',
     icon: 'solar:user-bold-duotone',
     path: '/users',
     access: {
@@ -80,6 +84,7 @@ export const menuConfig: MenuItem[] = [
   {
     id: 'retreat-management',
     label: 'Gestão de Retiros',
+    labelKey: 'menu.retreat-management',
     icon: 'material-symbols:temple-buddhist',
     path: '/retreats',
     access: {
@@ -92,6 +97,7 @@ export const menuConfig: MenuItem[] = [
   {
     id: 'outbox',
     label: 'Gestão de OutBox',
+    labelKey: 'menu.outbox',
     icon: 'ic:round-payments',
     path: '/outbox',
     access: {
@@ -104,6 +110,7 @@ export const menuConfig: MenuItem[] = [
   {
     id: 'profile-management',
     label: 'Gestão de Perfil',
+    labelKey: 'menu.profile-management',
     icon: 'material-symbols:person',
     path: '/profile',
     access: {
@@ -118,6 +125,7 @@ export const menuConfig: MenuItem[] = [
   {
     id: 'settings',
     label: 'Configurações',
+    labelKey: 'menu.settings',
     icon: 'material-symbols:settings',
     path: '/settings',
     access: {

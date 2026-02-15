@@ -1,5 +1,6 @@
 'use client';
 import { Session } from 'next-auth';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -129,6 +130,7 @@ const SideMenuDrawer = ({
   session: Session | null;
   children: React.ReactNode;
 }) => {
+  const t = useTranslations();
   const {
     mobileOpen,
     drawerWidth,
@@ -149,7 +151,10 @@ const SideMenuDrawer = ({
   // const showMenuLabels = openPersistent;
 
   // ✅ Obter apenas os menus que o usuário tem acesso
-  const accessibleMenus = getAccessibleMenus();
+  const accessibleMenus = getAccessibleMenus((menu) => {
+    if (!menu.labelKey) return menu.label;
+    return t.has(menu.labelKey) ? t(menu.labelKey) : menu.label;
+  });
   const handleMenuClick = (path: string) => {
     router.push(path);
     // Close mobile drawer after navigation
@@ -193,8 +198,16 @@ const SideMenuDrawer = ({
         {accessibleMenus.length === 0 && !isLoadingMenu && (
           <ListItem>
             <ListItemText
-              primary="Nenhum menu disponível"
-              secondary="Entre em contato com o administrador"
+              primary={
+                t.has('menu.empty.title')
+                  ? t('menu.empty.title')
+                  : 'Nenhum menu disponível'
+              }
+              secondary={
+                t.has('menu.empty.description')
+                  ? t('menu.empty.description')
+                  : 'Entre em contato com o administrador'
+              }
             />
           </ListItem>
         )}

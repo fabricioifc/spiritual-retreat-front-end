@@ -28,7 +28,15 @@
     "Contemplated": "Contemplados",
     "Service-unassigned": "Sem Equipe de Serviço",
     "Service-confirmed": "Equipe de Serviço Confirmada",
-    "Generic": "Genérico"
+    "Generic": "Genérico",
+    "create": "Criar",
+    "edit": "Editar",
+    "new": "Novo",
+    "my-retreats": "Meus Retiros",
+    "users-create": "Novo Usuário",
+    "users-edit": "Editar Usuário",
+    "reports-edit": "Editar Relatório",
+    "tents": "Barracas"
   },
   "error": "Algo deu errado",
   "HomePage": {
@@ -799,5 +807,54 @@
     "error": "Erro ao criar barraca."
   },
   "Male": "Masculino",
-  "Female": "Feminino"
+  "Female": "Feminino",
+  "phone": "Telefone",
+  "name": "Nome",
+  "profile": {
+    "name": "Nome",
+    "email": "E-mail",
+    "phone": "Telefone",
+    "picture": {
+      "description": "Clique na foto para atualizar.",
+      "change": "Trocar Foto"
+    }
+  },
+  "settings": {
+    "title": "Configurações",
+    "description": "Personalize sua experiência ajustando o tema e o idioma de exibição.",
+    "theme": {
+      "title": "Tema",
+      "description": "Escolha entre modo claro ou escuro para a interface.",
+      "options": {
+        "system": "Sistema",
+        "light": "Claro",
+        "dark": "Escuro"
+      }
+    },
+    "language": {
+      "title": "Idioma",
+      "description": "Selecione o idioma preferido para a interface do sistema.",
+      "label": "Idioma",
+      "current": "Idioma atual:"
+    },
+    "languages": {
+      "ptBR": "Português (Brasil)",
+      "enUS": "English",
+      "es": "Español"
+    }
+  },
+  "menu": {
+    "dashboard": "Dashboard",
+    "reports": "Relatórios",
+    "user-management": "Gestão de Usuários",
+    "retreat-management": "Gestão de Retiros",
+    "outbox": "Gestão de OutBox",
+    "profile-management": "Gestão de Perfil",
+    "settings": "Configurações",
+    "empty": {
+      "title": "Nenhum menu disponível",
+      "description": "Entre em contato com o administrador"
+    }
+  },
+  "not-informed": "Não informado"
 }
