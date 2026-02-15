@@ -25,8 +25,6 @@ const useAllowEdit = ({ permission }: AllowEditProps) => {
     });
   }, [userData, permission]);
 
-  console.log(hasPermission, permission, userData, 'PERMISSÃO');
-
   return {
     allowEdit: hasPermission,
   };

@@ -1,14 +1,15 @@
-import Iconify from "@/src/components/Iconify";
-import Close from "@mui/icons-material/Close";
-import { Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
-import { CloseButtonProps, ModalComponentProps } from "./types";
+import Close from '@mui/icons-material/Close';
+import { Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
+
+import Iconify from '@/src/components/Iconify';
+
+import { CloseButtonProps, ModalComponentProps } from './types';
 
 export const ModalComponent = ({
   size,
   scroll,
   verticalAlign,
-  variant = "small",
-  key,
+  variant = 'small',
   keepMounted,
   customRender,
   title,
@@ -19,12 +20,11 @@ export const ModalComponent = ({
   closeButtonSx,
   isOpened,
 }: ModalComponentProps) => {
-  const isCompact = variant === "small";
-  const contentHeight = isCompact ? 300 : "80vh";
+  const isCompact = variant === 'small';
+  const contentHeight = isCompact ? 300 : '80vh';
 
   return (
     <Dialog
-      key={key}
       keepMounted={keepMounted}
       maxWidth={size}
       fullWidth
@@ -40,7 +40,7 @@ export const ModalComponent = ({
       onClose={handleClose}
     >
       {title ? (
-        <DialogTitle sx={{ display: "flex", alignItems: "center", pb: 1 }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', pb: 1 }}>
           {title && (
             <>
               {titleIcon && <Iconify icon={titleIcon} size={3} mr={1} />}
@@ -74,7 +74,7 @@ const CloseButton = ({ handleClose, sx, ...rest }: CloseButtonProps) => (
     onClick={handleClose}
     sx={{
       maxWidth: 50,
-      position: "absolute",
+      position: 'absolute',
       right: 20,
       zIndex: (theme) => theme.zIndex.modal + 1,
       ...sx,

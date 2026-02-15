@@ -1,46 +1,47 @@
-import { http, HttpResponse } from "msw";
-import { BackendJWT, UserObject } from "next-auth";
-import { create_accessToken, create_refreshToken } from "./actions";
-import { RegisterSchema } from "../schemas";
-import { createUserMock } from "./handlerData/login";
-import getUserById from "./handlerData/getUserById";
-import { mockMetrics, mockRetreats } from "./handlerData/dashboard";
-import { mockReportDetails, mockReports } from "./handlerData/reports";
-import { mockUsers } from "./handlerData/users";
-import { mockContemplatedParticipants } from "./handlerData/retreats/contemplated";
-import { mockFamilies } from "./handlerData/retreats/families";
-import { columnsMock } from "./handlerData/reports/columns";
+import { UserObject } from 'next-auth';
+
+import { HttpResponse, http } from 'msw';
+
+// import { create_accessToken, create_refreshToken } from "./actions";
+import { RegisterSchema } from '../schemas';
+import { mockMetrics, mockRetreats } from './handlerData/dashboard';
+import { sections2 as sections } from './handlerData/formData';
+import getUserById from './handlerData/getUserById';
 import {
-  createByOrigin,
   MockNotification,
+  createByOrigin,
   mockNotifications,
-} from "./handlerData/notifications";
-import { sections2 as sections } from "./handlerData/formData";
+} from './handlerData/notifications';
+import { mockReportDetails, mockReports } from './handlerData/reports';
+import { columnsMock } from './handlerData/reports/columns';
+import { mockContemplatedParticipants } from './handlerData/retreats/contemplated';
+import { mockFamilies } from './handlerData/retreats/families';
 import {
-  paginate,
+  MockServiceSpace,
+  mockServiceSpaces,
+  updateServiceSpace,
+} from './handlerData/retreats/serviceSpaces';
+import { mockUsers } from './handlerData/users';
+import {
+  ServiceSpaceMemberInput,
   ensureFamilyGroups,
-  LoginRequest,
   normalizeOptionalServiceSpaceMember,
   normalizeServiceSpaceMember,
-  ServiceSpaceMemberInput,
-} from "./shared";
-import {
-  mockServiceSpaces,
-  MockServiceSpace,
-  updateServiceSpace,
-} from "./handlerData/retreats/serviceSpaces";
+  paginate,
+} from './shared';
+
 //import { handlersApi } from "./handlersApi";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 export const handlers = [
   //...handlersApi,
   http.get(`${API_BASE_URL}/user`, () => {
     return HttpResponse.json({
-      id: "1",
-      name: "Vitor Admin",
-      email: "admin@email.com",
+      id: '1',
+      name: 'Vitor Admin',
+      email: 'admin@email.com',
     });
   }),
 
@@ -57,7 +58,7 @@ export const handlers = [
       return HttpResponse.json(user);
     }
     return HttpResponse.json(
-      { error: "Creation has failed." },
+      { error: 'Creation has failed.' },
       { status: 404 }
     );
   }),
@@ -68,7 +69,7 @@ export const handlers = [
     if (user) {
       return HttpResponse.json(user);
     }
-    return HttpResponse.json({ error: "User not found" }, { status: 404 });
+    return HttpResponse.json({ error: 'User not found' }, { status: 404 });
   }),
 
   http.get(`${API_BASE_URL}/user/:id/credentials`, ({ params }) => {
@@ -77,18 +78,18 @@ export const handlers = [
     if (user) {
       return HttpResponse.json(createCredentialsForUser(user));
     }
-    return HttpResponse.json({ error: "User not found" }, { status: 404 });
+    return HttpResponse.json({ error: 'User not found' }, { status: 404 });
   }),
 
   http.get(`${API_BASE_URL}/logout`, () => {
     return HttpResponse.json(
-      { message: "Logged out successfully" },
+      { message: 'Logged out successfully' },
       { status: 200 }
     );
   }),
 
   http.get(`${API_BASE_URL}/refresh`, () => {
-    return HttpResponse.json({ accessToken: "1234" }, { status: 200 });
+    return HttpResponse.json({ accessToken: '1234' }, { status: 200 });
   }),
 
   // http.post(`${API_BASE_URL}/login`, async ({ request }) => {
@@ -147,21 +148,21 @@ export const handlers = [
 
     if (!email || !code) {
       return HttpResponse.json(
-        { error: "Missing email or code" },
+        { error: 'Missing email or code' },
         { status: 400 }
       );
     }
     // Simular verificação de código
-    if (code === "123456") {
+    if (code === '123456') {
       // Código correto
       // Retornar tokens e dados do usuário
-      const user = getUserById("4");
+      const user = getUserById('4');
       if (user) {
         return HttpResponse.json(
           {
-            message: "Login successful",
-            accessToken: create_accessToken(user),
-            refreshToken: create_refreshToken(user),
+            message: 'Login successful',
+            // accessToken: create_accessToken(user),
+            // refreshToken: create_refreshToken(user),
             user,
           },
           { status: 200 }
@@ -169,7 +170,7 @@ export const handlers = [
       }
     }
     return HttpResponse.json(
-      { error: "Wrong E-mail or code." },
+      { error: 'Wrong E-mail or code.' },
       { status: 400 }
     );
   }),
@@ -177,22 +178,22 @@ export const handlers = [
     const { email, password, code } = (await request.json()) as RegisterSchema;
 
     // Simular criação de usuário
-    if (email && password && code === "654321") {
+    if (email && password && code === '654321') {
       return HttpResponse.json(
         {
-          message: "User registered successfully",
+          message: 'User registered successfully',
           success: true,
         },
         { status: 201 }
       );
     }
 
-    if (email && password && code !== "654321") {
-      return HttpResponse.json({ error: "Invalid code" }, { status: 400 });
+    if (email && password && code !== '654321') {
+      return HttpResponse.json({ error: 'Invalid code' }, { status: 400 });
     }
 
     return HttpResponse.json(
-      { error: "Invalid registration data" },
+      { error: 'Invalid registration data' },
       { status: 400 }
     );
   }),
@@ -205,7 +206,7 @@ export const handlers = [
     if (metrics) {
       return HttpResponse.json(metrics, { status: 200 });
     }
-    return HttpResponse.json({ error: "Retreat not found" }, { status: 404 });
+    return HttpResponse.json({ error: 'Retreat not found' }, { status: 404 });
   }),
 
   http.get(
@@ -239,46 +240,46 @@ export const handlers = [
       const answers = {
         nome_completo: participant?.name ?? `Participante ${participantId}`,
         email: participant?.email ?? `participante${participantId}@email.com`,
-        n_whatsapp: participant?.phone ?? "+55 (11) 99999-9999",
-        celular: participant?.phone ?? "+55 (11) 99999-9999",
-        celular_vizinho_conhecido: "+55 (11) 98888-0001",
-        celular_parente_conhecido: "+55 (11) 97777-0002",
-        sexo: participantId % 2 === 0 ? "Feminino" : "Masculino",
-        cpf: "123.456.789-00",
-        data_nascimento: "1990-05-12",
-        idade: "33",
-        estado_civil: "Solteiro(a)",
-        profissao: "Analista de Sistemas",
-        tamanho_camiseta: "M",
+        n_whatsapp: participant?.phone ?? '+55 (11) 99999-9999',
+        celular: participant?.phone ?? '+55 (11) 99999-9999',
+        celular_vizinho_conhecido: '+55 (11) 98888-0001',
+        celular_parente_conhecido: '+55 (11) 97777-0002',
+        sexo: participantId % 2 === 0 ? 'Feminino' : 'Masculino',
+        cpf: '123.456.789-00',
+        data_nascimento: '1990-05-12',
+        idade: '33',
+        estado_civil: 'Solteiro(a)',
+        profissao: 'Analista de Sistemas',
+        tamanho_camiseta: 'M',
         location: {
-          stateShort: "SP",
-          city: "São Paulo",
+          stateShort: 'SP',
+          city: 'São Paulo',
         },
-        rua_e_n_casa: "Rua das Flores, 123",
-        bairro: "Centro",
-        estou_gravida: "Não",
-        peso: "75",
-        altura: "177",
-        nome_usuario_facebook: "nao tenho",
-        instagram: "@participante",
-        "Pai está vivo?": true,
-        nome_pai: "João da Silva",
-        celular_pai: "+55 (11) 95555-1111",
-        grau_parentesco_preencheu: ["Pai"],
+        rua_e_n_casa: 'Rua das Flores, 123',
+        bairro: 'Centro',
+        estou_gravida: 'Não',
+        peso: '75',
+        altura: '177',
+        nome_usuario_facebook: 'nao tenho',
+        instagram: '@participante',
+        'Pai está vivo?': true,
+        nome_pai: 'João da Silva',
+        celular_pai: '+55 (11) 95555-1111',
+        grau_parentesco_preencheu: ['Pai'],
         mae_esta: true,
-        nome_mae: "Maria da Silva",
-        celular_mae: "+55 (11) 96666-2222",
+        nome_mae: 'Maria da Silva',
+        celular_mae: '+55 (11) 96666-2222',
         sofreu_perda_familiar: false,
         expectativas_para_o_retiro:
-          "Buscando crescimento espiritual e novos aprendizados.",
+          'Buscando crescimento espiritual e novos aprendizados.',
         possui_doenca_cronica: true,
-        quais_doencas_cronicas: ["Hipertensão"],
+        quais_doencas_cronicas: ['Hipertensão'],
         faz_uso_medicacao: true,
-        quais_medicacoes: "Losartana 50mg",
-        restricoes_alimentares: ["Vegetariano"],
+        quais_medicacoes: 'Losartana 50mg',
+        restricoes_alimentares: ['Vegetariano'],
         apoio_emocional: false,
-        experiencia_retiros: "Já participei de 2 retiros anteriormente.",
-        habilidades_especificas: ["Música", "Fotografia"],
+        experiencia_retiros: 'Já participei de 2 retiros anteriormente.',
+        habilidades_especificas: ['Música', 'Fotografia'],
         disponibilidade_servir: true,
         termos_aceitos: true,
       } as Record<string, unknown>;
@@ -346,7 +347,7 @@ export const handlers = [
       }
 
       return HttpResponse.json(
-        { error: "Família não encontrada" },
+        { error: 'Família não encontrada' },
         { status: 404 }
       );
     }
@@ -359,7 +360,7 @@ export const handlers = [
       const groups = ensureFamilyGroups(retreatId);
 
       // Check if there's a global lock
-      const globalLock = groups.every((g) => g.groupStatus === "locked");
+      const globalLock = groups.every((g) => g.groupStatus === 'locked');
 
       return HttpResponse.json(
         {
@@ -368,7 +369,7 @@ export const handlers = [
           families: mockFamilies.map((family) => ({
             familyId: String(family.familyId),
             familyName: family.name,
-            locked: family.isLocked ?? false,
+            // locked: family.isLocked ?? false,
           })),
         },
         { status: 200 }
@@ -387,7 +388,7 @@ export const handlers = [
 
       if (!current) {
         return HttpResponse.json(
-          { error: "Service space não encontrado" },
+          { error: 'Service space não encontrado' },
           { status: 404 }
         );
       }
@@ -398,16 +399,16 @@ export const handlers = [
 
       const patch: Partial<MockServiceSpace> = {};
 
-      if (typeof body.name === "string") {
+      if (typeof body.name === 'string') {
         patch.name = body.name;
       }
 
-      if (typeof body.description === "string") {
+      if (typeof body.description === 'string') {
         patch.description = body.description;
       }
 
       if (
-        typeof body.minMembers === "number" &&
+        typeof body.minMembers === 'number' &&
         !Number.isNaN(body.minMembers)
       ) {
         patch.minMembers = Math.max(1, Math.floor(body.minMembers));
@@ -417,7 +418,7 @@ export const handlers = [
         patch.coordinator = normalizeOptionalServiceSpaceMember(
           body.coordinator as ServiceSpaceMemberInput | null | undefined,
           0,
-          current.coordinator?.name ?? "Coordenador"
+          current.coordinator?.name ?? 'Coordenador'
         );
       }
 
@@ -425,7 +426,7 @@ export const handlers = [
         patch.viceCoordinator = normalizeOptionalServiceSpaceMember(
           body.viceCoordinator as ServiceSpaceMemberInput | null | undefined,
           1,
-          current.viceCoordinator?.name ?? "Vice responsável"
+          current.viceCoordinator?.name ?? 'Vice responsável'
         );
       }
 
@@ -457,7 +458,7 @@ export const handlers = [
             enabled: true,
             ratio: 0.5,
             tolerance: 1,
-            label: "50% homens / 50% mulheres",
+            label: '50% homens / 50% mulheres',
           },
           preventSameRealFamily: true,
           preventSameCity: true,
@@ -496,7 +497,7 @@ export const handlers = [
       return HttpResponse.json(
         {
           success: true,
-          message: "Configuração das famílias atualizada com sucesso",
+          message: 'Configuração das famílias atualizada com sucesso',
           data: {
             config: body,
           },
@@ -511,93 +512,93 @@ export const handlers = [
     const mockParticipants = [
       {
         id: 1,
-        name: "João Silva",
-        email: "joao.silva@email.com",
-        phone: "(11) 99999-1111",
+        name: 'João Silva',
+        email: 'joao.silva@email.com',
+        phone: '(11) 99999-1111',
         age: 25,
         isAssigned: false,
-        location: "São Paulo, SP",
+        location: 'São Paulo, SP',
       },
       {
         id: 2,
-        name: "Maria Santos",
-        email: "maria.santos@email.com",
-        phone: "(11) 99999-2222",
+        name: 'Maria Santos',
+        email: 'maria.santos@email.com',
+        phone: '(11) 99999-2222',
         age: 32,
         isAssigned: false,
-        location: "Rio de Janeiro, RJ",
+        location: 'Rio de Janeiro, RJ',
       },
       {
         id: 3,
-        name: "Pedro Oliveira",
-        email: "pedro.oliveira@email.com",
-        phone: "(11) 99999-3333",
+        name: 'Pedro Oliveira',
+        email: 'pedro.oliveira@email.com',
+        phone: '(11) 99999-3333',
         age: 28,
         isAssigned: false,
-        location: "Belo Horizonte, MG",
+        location: 'Belo Horizonte, MG',
       },
       {
         id: 4,
-        name: "Ana Costa",
-        email: "ana.costa@email.com",
-        phone: "(11) 99999-4444",
+        name: 'Ana Costa',
+        email: 'ana.costa@email.com',
+        phone: '(11) 99999-4444',
         age: 29,
         isAssigned: false,
-        location: "Porto Alegre, RS",
+        location: 'Porto Alegre, RS',
       },
       {
         id: 5,
-        name: "Carlos Pereira",
-        email: "carlos.pereira@email.com",
-        phone: "(11) 99999-5555",
+        name: 'Carlos Pereira',
+        email: 'carlos.pereira@email.com',
+        phone: '(11) 99999-5555',
         age: 35,
         isAssigned: false,
-        location: "Salvador, BA",
+        location: 'Salvador, BA',
       },
       {
         id: 6,
-        name: "Fernanda Lima",
-        email: "fernanda.lima@email.com",
-        phone: "(11) 99999-6666",
+        name: 'Fernanda Lima',
+        email: 'fernanda.lima@email.com',
+        phone: '(11) 99999-6666',
         age: 27,
         isAssigned: false,
-        location: "Brasília, DF",
+        location: 'Brasília, DF',
       },
       {
         id: 7,
-        name: "Ricardo Mendes",
-        email: "ricardo.mendes@email.com",
-        phone: "(11) 99999-7777",
+        name: 'Ricardo Mendes',
+        email: 'ricardo.mendes@email.com',
+        phone: '(11) 99999-7777',
         age: 31,
         isAssigned: false,
-        location: "Curitiba, PR",
+        location: 'Curitiba, PR',
       },
       {
         id: 8,
-        name: "Juliana Ferreira",
-        email: "juliana.ferreira@email.com",
-        phone: "(11) 99999-8888",
+        name: 'Juliana Ferreira',
+        email: 'juliana.ferreira@email.com',
+        phone: '(11) 99999-8888',
         age: 26,
         isAssigned: false,
-        location: "Fortaleza, CE",
+        location: 'Fortaleza, CE',
       },
       {
         id: 9,
-        name: "Rafael Alves",
-        email: "rafael.alves@email.com",
-        phone: "(11) 99999-9999",
+        name: 'Rafael Alves',
+        email: 'rafael.alves@email.com',
+        phone: '(11) 99999-9999',
         age: 33,
         isAssigned: false,
-        location: "Recife, PE",
+        location: 'Recife, PE',
       },
       {
         id: 10,
-        name: "Luciana Rocha",
-        email: "luciana.rocha@email.com",
-        phone: "(11) 99999-0000",
+        name: 'Luciana Rocha',
+        email: 'luciana.rocha@email.com',
+        phone: '(11) 99999-0000',
         age: 24,
         isAssigned: false,
-        location: "Goiânia, GO",
+        location: 'Goiânia, GO',
       },
     ];
 
@@ -611,7 +612,7 @@ export const handlers = [
       const body = (await request.json()) as {
         familyId: string;
         participantIds: number[];
-        role: "leader" | "member";
+        role: 'leader' | 'member';
       };
 
       return HttpResponse.json(
@@ -633,12 +634,12 @@ export const handlers = [
     const url = new URL(request.url);
 
     const isSelectAutocomplete =
-      url.searchParams.get("selectAutocomplete") === "true";
+      url.searchParams.get('selectAutocomplete') === 'true';
     //url.searchParams.get("variant") === "selectAutocomplete" ||
     // url.searchParams.get("type") === "selectAutocomplete";
 
     if (isSelectAutocomplete) {
-      const search = (url.searchParams.get("search") || "").toLowerCase();
+      const search = (url.searchParams.get('search') || '').toLowerCase();
 
       let list = mockRetreats;
 
@@ -647,7 +648,7 @@ export const handlers = [
       }
 
       // Optional limit for autocomplete (default 20)
-      const limit = parseInt(url.searchParams.get("limit") || "20", 10);
+      const limit = parseInt(url.searchParams.get('limit') || '20', 10);
       const sliced = list.slice(0, isNaN(limit) ? 20 : limit);
 
       return HttpResponse.json(
@@ -678,7 +679,7 @@ export const handlers = [
     if (retreat) {
       return HttpResponse.json(retreat, { status: 200 });
     }
-    return HttpResponse.json({ error: "Retreat not found" }, { status: 404 });
+    return HttpResponse.json({ error: 'Retreat not found' }, { status: 404 });
   }),
 
   http.get(
@@ -688,8 +689,8 @@ export const handlers = [
 
       const form = {
         id: `retreat-${id}-participant-form`,
-        title: "Inscrição - XV RahaminVIDA",
-        description: "Preencha seus dados para participar do retiro",
+        title: 'Inscrição - XV RahaminVIDA',
+        description: 'Preencha seus dados para participar do retiro',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         sections,
@@ -706,8 +707,8 @@ export const handlers = [
 
       const form = {
         id: `retreat-${id}-service-team-form`,
-        title: "Inscrição - XV RahaminVIDA - Equipe de Serviço",
-        description: "Preencha seus dados para servir no retiro",
+        title: 'Inscrição - XV RahaminVIDA - Equipe de Serviço',
+        description: 'Preencha seus dados para servir no retiro',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         sections,
@@ -724,7 +725,7 @@ export const handlers = [
 
     if (!participant) {
       return HttpResponse.json(
-        { error: "Participante não encontrado" },
+        { error: 'Participante não encontrado' },
         { status: 404 }
       );
     }
@@ -735,7 +736,7 @@ export const handlers = [
     return HttpResponse.json(
       {
         ...participant,
-        message: "Participante atualizado com sucesso",
+        message: 'Participante atualizado com sucesso',
       },
       { status: 200 }
     );
@@ -747,7 +748,7 @@ export const handlers = [
 
     if (index === -1) {
       return HttpResponse.json(
-        { error: "Participante não encontrado" },
+        { error: 'Participante não encontrado' },
         { status: 404 }
       );
     }
@@ -756,7 +757,7 @@ export const handlers = [
     mockContemplatedParticipants.splice(index, 1);
 
     return HttpResponse.json(
-      { message: "Participante excluído com sucesso" },
+      { message: 'Participante excluído com sucesso' },
       { status: 200 }
     );
   }),
@@ -791,7 +792,7 @@ export const handlers = [
         : [];
 
       const total =
-        typeof detail.summary?.totalFamilies === "number"
+        typeof detail.summary?.totalFamilies === 'number'
           ? detail.summary.totalFamilies
           : reportRows.length;
 
@@ -808,7 +809,7 @@ export const handlers = [
     }
 
     return HttpResponse.json(
-      { error: "Relatório não encontrado" },
+      { error: 'Relatório não encontrado' },
       { status: 404 }
     );
   }),
@@ -819,7 +820,7 @@ export const handlers = [
 
     // Garante que newReport é um objeto
     const reportData =
-      typeof newReport === "object" && newReport !== null ? newReport : {};
+      typeof newReport === 'object' && newReport !== null ? newReport : {};
 
     // Simula a criação atribuindo um ID
     const createdReport = {
@@ -837,14 +838,14 @@ export const handlers = [
     const updatedData = await request.json();
 
     const reportData =
-      typeof updatedData === "object" && updatedData !== null
+      typeof updatedData === 'object' && updatedData !== null
         ? updatedData
         : {};
     const reportExists = mockReports.some((r) => r.id === id);
 
     if (!reportExists) {
       return HttpResponse.json(
-        { error: "Relatório não encontrado" },
+        { error: 'Relatório não encontrado' },
         { status: 404 }
       );
     }
@@ -865,7 +866,7 @@ export const handlers = [
 
     if (!reportExists) {
       return HttpResponse.json(
-        { error: "Relatório não encontrado" },
+        { error: 'Relatório não encontrado' },
         { status: 404 }
       );
     }
@@ -873,7 +874,7 @@ export const handlers = [
     // Simula a exclusão retornando uma mensagem de sucesso
     return HttpResponse.json(
       {
-        message: "Relatório excluído com sucesso",
+        message: 'Relatório excluído com sucesso',
         id,
       },
       { status: 200 }
@@ -914,7 +915,7 @@ export const handlers = [
       return HttpResponse.json({ success: true }, { status: 200 });
     }
     return HttpResponse.json(
-      { error: "Notification not found" },
+      { error: 'Notification not found' },
       { status: 404 }
     );
   }),
@@ -926,17 +927,17 @@ export const handlers = [
     const stream = new ReadableStream({
       start(controller) {
         // Dica de reconexão do SSE
-        controller.enqueue(encoder.encode("retry: 10000\n\n"));
+        controller.enqueue(encoder.encode('retry: 10000\n\n'));
         let sent = 0;
-        const origins: MockNotification["origin"][] = [
-          "payment_confirmed",
-          "family_filled",
-          "registration_completed",
+        const origins: MockNotification['origin'][] = [
+          'payment_confirmed',
+          'family_filled',
+          'registration_completed',
         ];
 
         // Heartbeat para manter a conexão viva
         const keepAlive = setInterval(() => {
-          controller.enqueue(encoder.encode(":\n\n"));
+          controller.enqueue(encoder.encode(':\n\n'));
         }, 15001);
 
         const timer = setInterval(() => {
@@ -962,7 +963,7 @@ export const handlers = [
           mockNotifications.unshift(notif);
 
           // evento SSE
-          controller.enqueue(encoder.encode("event: notification\n"));
+          controller.enqueue(encoder.encode('event: notification\n'));
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify(notif)}\n\n`)
           );
@@ -979,7 +980,7 @@ export const handlers = [
 
         // Abort/cancel
 
-        request?.signal?.addEventListener?.("abort", () => {
+        request?.signal?.addEventListener?.('abort', () => {
           clearInterval(timer);
           clearInterval(keepAlive);
           try {
@@ -995,9 +996,9 @@ export const handlers = [
     return new Response(stream, {
       status: 200,
       headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive",
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
       },
     });
   }),
@@ -1008,12 +1009,12 @@ export const handlers = [
       const url = new URL(request.url);
 
       const isSelectAutocomplete =
-        url.searchParams.get("selectAutocomplete") === "true";
+        url.searchParams.get('selectAutocomplete') === 'true';
       //url.searchParams.get("variant") === "selectAutocomplete" ||
       // url.searchParams.get("type") === "selectAutocomplete";
 
       if (isSelectAutocomplete) {
-        const search = (url.searchParams.get("search") || "").toLowerCase();
+        const search = (url.searchParams.get('search') || '').toLowerCase();
 
         let list = mockRetreats;
 
@@ -1022,7 +1023,7 @@ export const handlers = [
         }
 
         // Optional limit for autocomplete (default 20)
-        const limit = parseInt(url.searchParams.get("limit") || "20", 10);
+        const limit = parseInt(url.searchParams.get('limit') || '20', 10);
         const sliced = list.slice(0, isNaN(limit) ? 20 : limit);
 
         return HttpResponse.json(
@@ -1057,9 +1058,9 @@ export const handlers = [
 ];
 function createCredentialsForUser(
   user: UserObject
-): import("msw").JsonBodyType {
+): import('msw').JsonBodyType {
   return {
-    login: user.name + " login",
+    login: user.name + ' login',
     email: user.email,
     emailVerified: Math.random() < 0.5, // Randomly true or false
   };

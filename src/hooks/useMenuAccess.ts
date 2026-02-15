@@ -82,9 +82,17 @@ export function useMenuAccess(session: Session | null = null) {
     }
   };
 
-  const getAccessibleMenus = (): MenuItem[] => {
+  const getAccessibleMenus = (
+    resolveLabel?: (menu: MenuItem) => string
+  ): MenuItem[] => {
     try {
-      return menuConfig.filter((menu) => hasAccess(menu.access));
+      const menus = menuConfig.filter((menu) => hasAccess(menu.access));
+      if (!resolveLabel) return menus;
+
+      return menus.map((menu) => ({
+        ...menu,
+        label: resolveLabel(menu),
+      }));
     } catch (error) {
       console.error('Erro ao obter menus acessíveis:', error);
       return [];
