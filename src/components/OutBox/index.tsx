@@ -121,8 +121,8 @@ export default function RetreatOutboxTab() {
     queryFn: async () => {
       try {
         const params: Record<string, string | number | boolean> = {
-          limit: filters.pageLimit,
-          page: filters.page,
+          take: filters.pageLimit,
+          skip: (filters.page - 1) * filters.pageLimit,
         };
 
         if (filters.processed) {
@@ -153,21 +153,32 @@ export default function RetreatOutboxTab() {
         if (Array.isArray(data)) {
           return {
             items: data,
-            total: data.length,
-            page: filters.page,
-            pageLimit: filters.pageLimit,
+            totalCount: data.length,
+            skip: (filters.page - 1) * filters.pageLimit,
+            take: filters.pageLimit,
+            hasNextPage: false,
+            hasPreviousPage: filters.page > 1,
           } satisfies OutboxListResponse;
         }
 
         if (data && Array.isArray(data.items)) {
-          return data;
+          return {
+            items: data.items,
+            totalCount: data.totalCount ?? 0,
+            skip: data.skip ?? 0,
+            take: data.take ?? filters.pageLimit,
+            hasNextPage: data.hasNextPage ?? false,
+            hasPreviousPage: data.hasPreviousPage ?? false,
+          } satisfies OutboxListResponse;
         }
 
         return {
           items: [],
-          total: 0,
-          page: filters.page,
-          pageLimit: filters.pageLimit,
+          totalCount: 0,
+          skip: 0,
+          take: filters.pageLimit,
+          hasNextPage: false,
+          hasPreviousPage: false,
         } satisfies OutboxListResponse;
       } catch (error) {
         const message = axios.isAxiosError(error)
@@ -418,7 +429,7 @@ export default function RetreatOutboxTab() {
           )}
           enablePagination
           manualPagination
-          pageCount={Math.ceil((tableData?.total ?? 0) / filters.pageLimit)}
+          pageCount={Math.ceil((tableData?.totalCount ?? 0) / filters.pageLimit)}
           pageSize={filters.pageLimit}
           pageSizeOptions={[10, 25, 50, 100, 999]}
           onPaginationModelChange={(model) => {

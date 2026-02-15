@@ -27,9 +27,11 @@ export interface OutboxMessage {
 
 export interface OutboxListResponse {
   items: OutboxMessage[];
-  total: number;
-  page: number;
-  pageLimit: number;
+  totalCount: number;
+  skip: number;
+  take: number;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
 }
 
 export interface OutboxHistoryEntry {
