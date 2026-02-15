@@ -25,6 +25,9 @@ import {
 } from './src/lib/sendRequestServerVanilla';
 import { refresh } from './src/mocks/actions';
 
+const ACCESS_TOKEN_REFRESH_LEEWAY_SECONDS = 60;
+const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // 30 days
+
 const storage = createStorage({
   driver: process.env.VERCEL
     ? vercelKVDriver({
@@ -68,7 +71,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   theme: { logo: 'https://authjs.dev/img/logo-sm.png' },
   session: {
     strategy: 'jwt',
-    maxAge: 15 * 60, // 15 minutos
+    // Keep auth cookie alive longer than access token TTL.
+    // Access token refresh is controlled by token.validity.
+    maxAge: SESSION_MAX_AGE_SECONDS,
     updateAge: 5 * 60, // Tenta atualizar a sessão a cada 5 minutos
   },
   pages: {
@@ -99,6 +104,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         hasTokenData: Boolean(token.data),
         tokenError: token.error ?? null,
       });
+
+      // Keep terminal auth errors sticky and avoid repeated refresh attempts.
+      if (
+        token.error === 'RefreshAccessTokenError' ||
+        token.error === 'RefreshTokenExpired'
+      ) {
+        return token;
+      }
 
       if (user) {
         const enrichedUser = user as User & {
@@ -131,6 +144,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const refreshUntil = token.data.validity?.refresh_until
         ? token.data.validity.refresh_until * 1000
         : 0;
+      const refreshLeewayMs = ACCESS_TOKEN_REFRESH_LEEWAY_SECONDS * 1000;
+      const shouldKeepCurrentAccessToken =
+        Boolean(token.data.validity?.valid_until) &&
+        now < validUntil - refreshLeewayMs;
 
       // eslint-disable-next-line no-console
       console.log('🔍 Token check:', {
@@ -142,10 +159,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           : 'N/A',
         isValid: now < validUntil,
         canRefresh: now < refreshUntil,
+        refreshLeewaySeconds: ACCESS_TOKEN_REFRESH_LEEWAY_SECONDS,
       });
 
-      // The current access token is still valid
-      if (token.data.validity?.valid_until && now < validUntil) {
+      // Keep using current token only when we're not near expiry.
+      if (shouldKeepCurrentAccessToken) {
         // eslint-disable-next-line no-console
         console.log('✅ Access token is still valid');
         return token;
@@ -273,7 +291,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
         return isAllowed;
       }
-      console.warn('[auth][authorized] allowed public/auth route', { pathname });
+      console.warn('[auth][authorized] allowed public/auth route', {
+        pathname,
+      });
       return true;
     },
   },
@@ -343,10 +363,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
             if (!data?.accessToken || error) {
               // Código inválido -> credenciais inválidas
-              console.warn(
-                '[auth][provider:credentials] code flow denied',
-                { hasData: Boolean(data), error: error ?? null }
-              );
+              console.warn('[auth][provider:credentials] code flow denied', {
+                hasData: Boolean(data),
+                error: error ?? null,
+              });
               return null;
             }
 
@@ -387,7 +407,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const data = response.data;
 
           if (!data) {
-            console.warn('[auth][provider:credentials] denied: empty login data');
+            console.warn(
+              '[auth][provider:credentials] denied: empty login data'
+            );
             return null;
           }
 
@@ -505,7 +527,23 @@ async function refreshAccessToken(nextAuthJWT: JWT): Promise<JWT> {
         };
       }
 
-      // Soft failure: network/5xx/transient issues. Keep session and retry later.
+      const currentValidUntil =
+        nextAuthJWT.data?.validity?.valid_until &&
+        nextAuthJWT.data.validity.valid_until > 0
+          ? nextAuthJWT.data.validity.valid_until * 1000
+          : 0;
+      const accessTokenAlreadyExpired =
+        !currentValidUntil || Date.now() >= currentValidUntil;
+
+      if (accessTokenAlreadyExpired) {
+        // If access token is already expired, avoid a frozen session with stale auth.
+        return {
+          ...nextAuthJWT,
+          error: 'RefreshAccessTokenError',
+        };
+      }
+
+      // Soft failure while access token is still valid: keep session and retry soon.
       return nextAuthJWT;
     } finally {
       // Importante: Limpa a variável para permitir futuros refreshes
