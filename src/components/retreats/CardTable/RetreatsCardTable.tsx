@@ -1,16 +1,9 @@
 "use client";
-import { useState } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  ColumnDef,
-  flexRender,
-} from "@tanstack/react-table";
+import { ReactNode, useState } from "react";
 import {
   Box,
   Typography,
   Button,
-  //Chip,
   Grid,
   Pagination,
   Stack,
@@ -20,32 +13,122 @@ import {
   ListItemText,
 } from "@mui/material";
 import Iconify from "../../Iconify";
-import { RetreatsCardTableFilters, RetreatSimple } from "../types";
+import { RetreatSimple } from "../types";
+import { useRetreatsTableContext } from "../context";
 
 interface RetreatsCardTableProps {
-  data?: RetreatSimple[];
-  total?: number;
-  loading: boolean;
-  filters: TableDefaultFilters<RetreatsCardTableFilters>;
-  onEdit?: (retreatId: string) => void;
-  onView?: (retreatId: string) => void;
-  onFiltersChange: (
-    filters: TableDefaultFilters<RetreatsCardTableFilters>
-  ) => void;
+  children?: (retreat: RetreatSimple) => ReactNode;
 }
 
-export default function RetreatsCardTable({
-  loading,
-  data,
-  total,
-  filters,
-  onEdit,
-  onView,
-  onFiltersChange,
-}: RetreatsCardTableProps) {
+interface DefaultRetreatCardItemProps {
+  retreat: RetreatSimple;
+}
+
+export function DefaultRetreatCardItem({ retreat }: DefaultRetreatCardItemProps) {
+  const { onEdit, onView } = useRetreatsTableContext();
+
+  return (
+    <Box
+      sx={{
+        width: 263,
+        borderRadius: "8px",
+        borderColor: "divider",
+        borderStyle: "solid",
+        borderWidth: 2,
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        sx={{
+          height: 304,
+          position: "relative",
+          borderColor: "divider",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-end",
+          backgroundImage: `url(${retreat.image || "/public/images/retreats/retreat-1.jpg"})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            top: 0,
+            borderRadius: "8px 8px 0 0",
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.55) 5%, rgba(255, 255, 255, 0) 100%)",
+            zIndex: 1,
+          }}
+        />
+        <Box
+          sx={{
+            position: "relative",
+            zIndex: 2,
+            p: 2,
+            color: "common.white",
+          }}
+        >
+          <Typography variant="h6" component="div" gutterBottom>
+            {retreat.name}
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <Iconify
+              icon="solar:map-point-bold"
+              sx={{ color: "common.white", mr: 0.5 }}
+            />
+          </Box>
+        </Box>
+      </Box>
+      <Box
+        sx={{
+          flex: 1,
+          p: 2,
+          pb: 1,
+          borderRadius: "0 0 8px 8px",
+          backgroundColor: "background.paper",
+          display: "flex",
+          alignContent: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Button
+          size="medium"
+          variant="outlined"
+          sx={{
+            width: 100,
+            backgroundColor: "primary.main",
+            color: "white",
+            borderColor: "primary.main",
+            "&:hover": {
+              backgroundColor: "primary.dark",
+              borderColor: "primary.dark",
+            },
+          }}
+          onClick={() => onView(retreat.id)}
+        >
+          Visão Geral
+        </Button>
+        <Button
+          sx={{ width: 100 }}
+          size="medium"
+          variant="outlined"
+          onClick={() => onEdit(retreat.id)}
+        >
+          Ver Mais
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
+export default function RetreatsCardTable({ children }: RetreatsCardTableProps) {
+  const { loading, data, total, filters, onFiltersChange } = useRetreatsTableContext();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  // const searchParams = useSearchParams();
-  // const router = useRouter();
 
   const handlePopoverOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -62,220 +145,11 @@ export default function RetreatsCardTable({
 
   const open = Boolean(anchorEl);
 
-  // Extrair filtros da URL
-
-  // Define columns for TanStack Table
-  const columns: ColumnDef<RetreatSimple>[] = [
-    {
-      id: "card",
-      cell: (row) => {
-        const { original: retreat } = row.cell.row;
-
-        // Define status color based on status value
-        // const statusColor = {
-        //   open: {
-        //     color: "success",
-        //     sx: {
-        //       bgcolor: "rgba(27, 73, 23, 0.61)",
-        //       color: "rgba(72, 255, 0, 0.93)",
-        //     },
-        //   },
-        //   closed: {
-        //     color: "error",
-        //     sx: {
-        //       bgcolor: "rgba(97, 34, 26, 0.4)",
-        //       color: "rgba(255, 30, 0, 0.93)",
-        //     },
-        //   },
-        //   upcoming: {
-        //     color: "warning",
-        //     sx: {
-        //       bgcolor: "rgba(73, 23, 23, 0.61)",
-        //       color: "rgba(72, 255, 0, 0.93)",
-        //     },
-        //   },
-        //   running: {
-        //     color: "default",
-        //     sx: {
-        //       bgcolor: "rgba(99, 76, 15, 0.61)",
-        //       color: "rgba(255, 196, 0, 0.86)",
-        //     },
-        //   },
-        //   ended: {
-        //     color: "info",
-        //     sx: {
-        //       bgcolor: "rgba(27, 73, 23, 0.61)",
-        //       color: "rgba(101, 107, 106, 0.07)",
-        //     },
-        //   },
-        // } as const;
-
-        // Status label text translation
-        // const statusText = {
-        //   open: "open",
-        //   closed: "closed",
-        //   upcoming: "upcoming",
-        //   running: "running",
-        //   ended: "ended",
-        // };
-
-        return (
-          <Box
-            sx={{
-              width: 263,
-              borderRadius: "8px",
-              borderColor: "divider",
-              borderStyle: "solid",
-              borderWidth: 2,
-              overflow: "hidden",
-            }}
-          >
-            <Box
-              sx={{
-                height: 304,
-                position: "relative",
-                borderColor: "divider",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                backgroundImage: `url(${retreat.image || "/public/images/retreats/retreat-1.jpg"})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              {/* Gradient overlay */}
-              <Box
-                sx={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  top: 0,
-                  borderRadius: "8px 8px 0 0",
-                  background:
-                    "linear-gradient(to top, rgba(0,0,0,0.55) 5%, rgba(255, 255, 255, 0) 100%)",
-                  zIndex: 1,
-                }}
-              />
-              {/* Content */}
-              <Box
-                sx={{
-                  position: "relative",
-                  zIndex: 2,
-                  p: 2,
-                  color: "common.white",
-                }}
-              >
-                {/* <Chip
-                  label={statusText[retreat.status]}
-                  color={statusColor[retreat.status].color}
-                  sx={{
-                    mb: 1,
-                    fontWeight: "medium",
-                    bgcolor: statusColor[retreat.status].sx.bgcolor,
-                    color: statusColor[retreat.status].sx.color,
-                    borderStyle: "solid",
-                    borderColor: "common.white",
-                    borderWidth: 1,
-                  }}
-                /> */}
-                <Typography variant="h6" component="div" gutterBottom>
-                  {retreat.name}
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                  <Iconify
-                    icon="solar:map-point-bold"
-                    sx={{ color: "common.white", mr: 0.5 }}
-                  />
-                  {/* <Typography variant="body2" color="common.white">
-                    {retreat.location}
-                  </Typography> */}
-                </Box>
-              </Box>
-            </Box>
-            <Box
-              sx={{
-                flex: 1,
-                p: 2,
-                pb: 1,
-                borderRadius: "0 0 8px 8px",
-                backgroundColor: "background.paper",
-                display: "flex",
-                alignContent: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <Button
-                size="medium"
-                variant="outlined"
-                sx={{
-                  width: 100,
-                  backgroundColor: "primary.main",
-                  color: "white",
-                  borderColor: "primary.main",
-                  "&:hover": {
-                    backgroundColor: "primary.dark",
-                    borderColor: "primary.dark",
-                  },
-                }}
-                onClick={() => onView?.(retreat.id)}
-              >
-                Visão Geral
-              </Button>
-              <Button
-                sx={{ width: 100 }}
-                size="medium"
-                variant="outlined"
-                onClick={() => onEdit?.(retreat.id)}
-              >
-                Ver Mais
-              </Button>
-            </Box>
-          </Box>
-        );
-      },
-    },
-  ];
-
-  // Apply filters to data
-
   const page = filters.page || 1; // 1-based externo
   const pageLimit = filters.pageLimit || 8;
-  // Total de itens e páginas
-  const totalItems = total ?? data?.length ?? 0;
+  const totalItems = total ?? data.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageLimit));
-
-  // Set up the table instance
-  const table = useReactTable({
-    data: data || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
-    pageCount: totalPages,
-    state: {
-      pagination: {
-        pageIndex: page - 1, // 0-based interno
-        pageSize: pageLimit,
-      },
-    },
-    onPaginationChange: (updater) => {
-      const next =
-        typeof updater === "function"
-          ? updater({
-              pageIndex: page - 1,
-              pageSize: pageLimit,
-            })
-          : updater;
-
-      // converter de volta para 1-based
-      onFiltersChange({
-        ...filters,
-        page: next.pageIndex + 1,
-        pageLimit: next.pageSize,
-      });
-    },
-  });
+  const renderRetreat = children ?? ((retreat: RetreatSimple) => <DefaultRetreatCardItem retreat={retreat} />);
 
   return (
     <Box
@@ -300,17 +174,14 @@ export default function RetreatsCardTable({
           {loading ? (
             <Typography>Loading retreats...</Typography>
           ) : (
-            table.getRowModel().rows.map((row) => (
+            data.map((retreat) => (
               <Grid
-                key={row.id}
+                key={retreat.id}
                 size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
                 display={"flex"}
                 justifyContent={"center"}
               >
-                {flexRender(
-                  row.getVisibleCells()[0].column.columnDef.cell,
-                  row.getVisibleCells()[0].getContext()
-                )}
+                {renderRetreat(retreat)}
               </Grid>
             ))
           )}
@@ -366,18 +237,14 @@ export default function RetreatsCardTable({
 
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <Typography variant="body2" color="text.secondary" mr={2}>
-            {table.getState().pagination.pageIndex + 1}-
-            {Math.min(
-              table.getState().pagination.pageIndex +
-                table.getState().pagination.pageSize,
-              data?.length ?? 0
-            )}{" "}
-            de {data?.length ?? 0}
+            {page}-{Math.min(page * pageLimit, totalItems)} de {totalItems}
           </Typography>
           <Pagination
-            count={table.getPageCount()}
-            page={table.getState().pagination.pageIndex + 1}
-            onChange={(_, page) => onFiltersChange?.({ page: page })}
+            count={totalPages}
+            page={page}
+            onChange={(_, nextPage) =>
+              onFiltersChange({ ...filters, page: nextPage })
+            }
             color="primary"
           />
         </Box>

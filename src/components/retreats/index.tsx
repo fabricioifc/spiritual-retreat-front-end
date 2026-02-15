@@ -1,5 +1,9 @@
 'use client';
-import { useEffect, useState } from 'react';
+import {
+  ReactNode,
+  useEffect,
+  useState,
+} from 'react';
 
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
@@ -20,12 +24,15 @@ import getPermission from '@/src/utils/getPermission';
 import { keysToRemoveFromFilters } from '../table/shared';
 import RetreatOverview from './CardTable/RetreatOverview';
 import RetreatsCardTable from './CardTable/RetreatsCardTable';
+import { RetreatsTableContext, RetreatsTableContextValue } from './context';
 import {
   RetreatSimple,
   RetreatSimpleRequest,
   RetreatsCardTableDateFilters,
   RetreatsCardTableFilters,
 } from './types';
+
+export { useRetreatsTableContext } from './context';
 
 const getRetreats = async (
   filters: TableDefaultFilters<
@@ -57,7 +64,11 @@ const getRetreats = async (
   }
 };
 
-export default function RetreatsTablePage() {
+interface RetreatsTablePageProps {
+  children?: ReactNode;
+}
+
+export default function RetreatsTablePage({ children }: RetreatsTablePageProps) {
   const t = useTranslations();
   const router = useRouter();
   const modal = useModal();
@@ -122,48 +133,52 @@ export default function RetreatsTablePage() {
 
   if (isError) return <Typography>No data available.</Typography>;
 
-  return (
-    <Container
-      maxWidth="xl"
-      sx={{ py: 4, height: '100%', display: 'flex', flexDirection: 'column' }}
-    >
-      <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-        <Typography variant="h5">{t('retreats')}</Typography>
-        {/* <FilterButton<
-          TableDefaultFilters<RetreatsCardTableFilters>,
-          RetreatsCardTableDateFilters
-        >
-          filters={filtersConfig}
-          defaultValues={filters}
-          onApplyFilters={handleApplyFilters}
-          onReset={resetFilters}
-          activeFiltersCount={activeFiltersCount}
-        /> */}
-        {hasCreatePermission && (
-          <Button variant="contained">
-            <Link href={{ pathname: '/retreats/create' }}>
-              Criar Novo Retiro
-            </Link>
-          </Button>
-        )}
-      </Stack>
+  const contextValue: RetreatsTableContextValue = {
+    loading: isLoading,
+    total: retreatsData?.totalCount || 0,
+    data: retreatsDataArray,
+    filters,
+    onEdit: handleEdit,
+    onView: handleView,
+    onFiltersChange: handleFiltersChange,
+  };
 
-      <Box
-        sx={{
-          flex: 1,
-          minHeight: 0,
-        }}
+  return (
+    <RetreatsTableContext.Provider value={contextValue}>
+      <Container
+        maxWidth="xl"
+        sx={{ py: 4, height: '100%', display: 'flex', flexDirection: 'column' }}
       >
-        <RetreatsCardTable
-          loading={isLoading}
-          total={retreatsData?.totalCount || 0}
-          filters={filters}
-          data={retreatsDataArray}
-          onEdit={handleEdit}
-          onView={handleView}
-          onFiltersChange={handleFiltersChange}
-        />
-      </Box>
-    </Container>
+        <Stack direction="row" spacing={2} alignItems="center" mb={3}>
+          <Typography variant="h5">{t('retreats')}</Typography>
+          {/* <FilterButton<
+            TableDefaultFilters<RetreatsCardTableFilters>,
+            RetreatsCardTableDateFilters
+          >
+            filters={filtersConfig}
+            defaultValues={filters}
+            onApplyFilters={handleApplyFilters}
+            onReset={resetFilters}
+            activeFiltersCount={activeFiltersCount}
+          /> */}
+          {hasCreatePermission && (
+            <Button variant="contained">
+              <Link href={{ pathname: '/retreats/create' }}>
+                Criar Novo Retiro
+              </Link>
+            </Button>
+          )}
+        </Stack>
+
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
+          {children || <RetreatsCardTable />}
+        </Box>
+      </Container>
+    </RetreatsTableContext.Provider>
   );
 }

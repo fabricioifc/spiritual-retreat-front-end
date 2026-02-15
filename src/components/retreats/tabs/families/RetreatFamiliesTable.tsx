@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, {
   useCallback,
   useEffect,
@@ -23,7 +22,6 @@ import {
 } from './types';
 
 type UniqueIdentifier = string | number;
-const DEFAULT_ITEM_STYLES = () => ({});
 const DEFAULT_WRAPPER_STYLE = () => ({});
 
 interface GenderBalanceRule {
@@ -38,12 +36,6 @@ interface FamilyCompositionRules {
   genderBalance?: GenderBalanceRule;
   preventSameRealFamily?: boolean;
   preventSameCity?: boolean;
-}
-
-interface FamilyCompositionRulesResponse {
-  success: boolean;
-  retreatId?: string;
-  rules: FamilyCompositionRules;
 }
 
 function findDuplicateValues(values: Array<string | undefined>): string[] {
@@ -72,18 +64,13 @@ export default function RetreatFamiliesTable({
   items: InitialItems,
   handle = true,
   containerStyle,
-  getItemStyles = DEFAULT_ITEM_STYLES,
   wrapperStyle = DEFAULT_WRAPPER_STYLE,
   minimal = false,
   trashable = false,
-  vertical = false,
   scrollable,
-  onFiltersChange,
-  filters,
   onView,
   onEdit,
   onDelete,
-  total,
   setFamiliesReorderFlag,
   onSaveReorder,
   retreatId,

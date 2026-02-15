@@ -68,7 +68,6 @@ export const fetchRetreatDataServer = async (
   session: Session | null
 ): Promise<Retreat | null> => {
   try {
-    console.log(session, 'responseServer');
     const baseURL =
       process.env.API_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
@@ -85,7 +84,6 @@ export const fetchRetreatDataServer = async (
     });
 
     if (!response.ok) {
-      console.log(response, 'responseServer');
       throw new Error(
         `Failed to fetch retreat data (status ${response.status})`
       );
