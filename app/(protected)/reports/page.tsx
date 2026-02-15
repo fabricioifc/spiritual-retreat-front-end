@@ -1,5 +1,5 @@
-import ReportPage from "@/src/components/reports";
+import ReportPage2 from '@/src/components/reports/ReportPage2';
 
 export default function Page() {
-  return <ReportPage />;
+  return <ReportPage2 />;
 }
