@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "lint:fix:all": "eslint . --ext .ts,.tsx,.js,.jsx --fix && prettier --write .",
+    "typecheck": "tsc --noEmit --incremental",
     "lint:staged": "lint-staged",
     "translate": "ts-node --esm messages/fillMissingTranslations.ts",
     "build:dev": "NODE_ENV=development next build",
