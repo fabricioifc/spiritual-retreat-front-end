@@ -1,12 +1,16 @@
-"use client";
+'use client';
 
 import {
+  type MouseEvent,
   useEffect,
   useMemo,
   useState,
   useTransition,
-  type MouseEvent,
-} from "react";
+} from 'react';
+
+import { useLocale, useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
+
 import {
   Box,
   Card,
@@ -22,28 +26,28 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
-} from "@mui/material";
-import { useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
-import { useDarkMode } from "@/src/theme/DarkModeContext";
+} from '@mui/material';
+import { useColorScheme } from '@mui/material';
 
-type ThemeOption = "light" | "dark";
-
-const LANGUAGE_OPTIONS = [
-  { value: "pt-BR", label: "Português (Brasil)" },
-  { value: "en", label: "English" },
-  { value: "es", label: "Español" },
-];
+type ThemeOption = 'system' | 'light' | 'dark';
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 const Settings = () => {
-  const { darkMode, toggleDarkMode } = useDarkMode();
+  const { mode, setMode } = useColorScheme();
   const locale = useLocale();
   const router = useRouter();
   const [selectedLocale, setSelectedLocale] = useState(locale);
   const [isPending, startTransition] = useTransition();
-
+  const t = useTranslations('settings');
+  const languageOptions = useMemo(
+    () => [
+      { value: 'pt-BR', label: t('languages.ptBR') },
+      { value: 'en-US', label: t('languages.enUS') },
+      { value: 'es', label: t('languages.es') },
+    ],
+    [t]
+  );
   useEffect(() => {
     setSelectedLocale(locale);
   }, [locale]);
@@ -53,46 +57,49 @@ const Settings = () => {
     nextMode: ThemeOption | null
   ) => {
     if (!nextMode) return;
-    const willEnableDarkMode = nextMode === "dark";
-    if (willEnableDarkMode !== darkMode) {
-      toggleDarkMode();
-    }
+    if (nextMode === mode) return;
+    setMode(nextMode);
   };
 
   const handleLocaleChange = (event: SelectChangeEvent<string>) => {
     const nextLocale = event.target.value;
     if (!nextLocale || nextLocale === selectedLocale) return;
 
+
     setSelectedLocale(nextLocale);
 
     startTransition(() => {
-      document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=${COOKIE_MAX_AGE}`;
+      document.cookie = `NEXT_LOCALE=${encodeURIComponent(nextLocale)}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`;
       router.refresh();
     });
 
     try {
-      localStorage.setItem("app-locale", nextLocale);
+      localStorage.setItem('app-locale', nextLocale);
     } catch (error) {
-      console.warn("Unable to persist locale preference", error);
+      console.warn('Unable to persist locale preference', error);
     }
   };
 
   const selectedLanguageLabel = useMemo(() => {
-    const option = LANGUAGE_OPTIONS.find(
+    const option = languageOptions.find(
       (item) => item.value === selectedLocale
     );
     return option?.label ?? selectedLocale;
-  }, [selectedLocale]);
+  }, [selectedLocale, languageOptions]);
+
+  if (!mode) {
+    return null;
+  }
 
   return (
-    <Box sx={{ py: 4, px: { xs: 2, md: 4 }, maxWidth: 720, mx: "auto" }}>
+    <Box sx={{ py: 4, px: { xs: 2, md: 4 }, maxWidth: 720, mx: 'auto' }}>
       <Stack spacing={4}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
-            Configurações
+            {t('title')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Personalize sua experiência ajustando o tema e o idioma de exibição.
+            {t('description')}
           </Typography>
         </Box>
 
@@ -101,22 +108,23 @@ const Settings = () => {
             <Stack spacing={2}>
               <Box>
                 <Typography variant="h6" component="h2">
-                  Tema
+                  {t('theme.title')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Escolha entre modo claro ou escuro para a interface.
+                  {t('theme.description')}
                 </Typography>
               </Box>
 
               <ToggleButtonGroup
                 color="primary"
                 exclusive
-                value={darkMode ? "dark" : "light"}
+                value={mode}
                 onChange={handleModeChange}
                 size="large"
               >
-                <ToggleButton value="light">Claro</ToggleButton>
-                <ToggleButton value="dark">Escuro</ToggleButton>
+                <ToggleButton value="system">{t('theme.options.system')}</ToggleButton>
+                <ToggleButton value="light">{t('theme.options.light')}</ToggleButton>
+                <ToggleButton value="dark">{t('theme.options.dark')}</ToggleButton>
               </ToggleButtonGroup>
             </Stack>
           </CardContent>
@@ -127,23 +135,23 @@ const Settings = () => {
             <Stack spacing={2}>
               <Box>
                 <Typography variant="h6" component="h2">
-                  Idioma
+                  {t('language.title')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Selecione o idioma preferido para a interface do sistema.
+                  {t('language.description')}
                 </Typography>
               </Box>
 
               <FormControl fullWidth>
-                <InputLabel id="language-select-label">Idioma</InputLabel>
+                <InputLabel id="language-select-label">{t('language.label')}</InputLabel>
                 <Select
                   labelId="language-select-label"
-                  label="Idioma"
+                  label={t('language.label')}
                   value={selectedLocale}
                   onChange={handleLocaleChange}
                   disabled={isPending}
                 >
-                  {LANGUAGE_OPTIONS.map((option) => (
+                  {languageOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
                     </MenuItem>
@@ -155,7 +163,7 @@ const Settings = () => {
 
               <Stack direction="row" spacing={1} alignItems="center">
                 <Typography variant="body2" color="text.secondary">
-                  Idioma atual:
+                  {t('language.current')}
                 </Typography>
                 <Typography variant="body2" fontWeight={600}>
                   {selectedLanguageLabel}
