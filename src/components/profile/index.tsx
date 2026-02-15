@@ -4,78 +4,107 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { UserObject } from 'next-auth';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-
-import { useSnackbar } from 'notistack';
 
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import {
-  Box,
-  Button,
-  ButtonBase,
-  Grid,
-  Skeleton,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Box, ButtonBase, Grid, Skeleton, Typography } from '@mui/material';
 
-import TextFieldMasked from '@/src/components/fields/maskedTextFields/TextFieldMasked';
 import { useModal } from '@/src/hooks/useModal';
 import apiClient from '@/src/lib/axiosClientInstance';
 
 import ProfilePictureModal from './ProfilePictureModal';
 
-type FormDataShape = Pick<UserObject, 'name'> & { phone: string };
+type ProfileDataShape = Pick<UserObject, 'name' | 'email'> & { phone: string };
+type MeProfileResponse = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  emailConfirmed: boolean;
+  enabled: boolean;
+  isLocked: boolean;
+  lockoutEndAt: string | null;
+  lastLoginAt: string | null;
+  photoUrl?: string | null;
+};
 
 const FALLBACK_PROFILE_IMAGE =
   'https://fastly.picsum.photos/id/503/200/200.jpg?hmac=genECHjox9165KfYsOiMMCmN-zGqh9u-lnhqcFinsrU';
 
 const mapUserToFormData = (
-  user: UserObject | null | undefined
-): FormDataShape => {
-  const candidate = user as unknown as
+  user:
+    | (UserObject & { phone?: string; number?: string })
+    | MeProfileResponse
+    | null
+    | undefined
+): ProfileDataShape => {
+  const candidate = user as
     | { phone?: string; number?: string }
+    | null
     | undefined;
   return {
     name: user?.name ?? '',
+    email: user?.email ?? '',
     phone: candidate?.phone ?? candidate?.number ?? '',
   };
 };
 
 const ProfilePage = () => {
-  const router = useRouter();
+  //const router = useRouter();
+  const t = useTranslations();
   const modal = useModal();
-  const { enqueueSnackbar } = useSnackbar();
   const { data: session, status, update } = useSession();
   const user = session?.user ?? null;
+  const userId = session?.user?.id;
 
   const initialFormValues = useMemo(() => mapUserToFormData(user), [user]);
-  const [formData, setFormData] = useState<FormDataShape>(initialFormValues);
+  const [profileData, setProfileData] =
+    useState<ProfileDataShape>(initialFormValues);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
     user?.profile_picture ?? null
   );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+
+  // useEffect(() => {
+  //   if (status === 'unauthenticated') {
+  //     router.replace('/auth/login');
+  //   }
+  // }, [status, router]);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/auth/login');
-    }
-  }, [status, router]);
-
-  useEffect(() => {
-    setFormData(initialFormValues);
+    setProfileData(initialFormValues);
   }, [initialFormValues]);
 
   useEffect(() => {
     setProfileImageUrl(user?.profile_picture ?? null);
   }, [user?.profile_picture]);
 
-  const handleInputChange =
-    (field: keyof FormDataShape) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setFormData((prev) => ({ ...prev, [field]: event.target.value }));
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchMeProfile = async () => {
+      if (!userId) return;
+      setIsProfileLoading(true);
+      try {
+        const { data } = await apiClient.get<MeProfileResponse>('/users/me');
+        if (!isMounted || !data) return;
+        setProfileData(mapUserToFormData(data));
+        setProfileImageUrl(data.photoUrl ?? null);
+      } catch (error) {
+        console.error('Erro ao buscar perfil do usuário logado:', error);
+      } finally {
+        if (isMounted) setIsProfileLoading(false);
+      }
     };
+
+    void fetchMeProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
 
   const handleProfilePictureUpdated = useCallback(
     async (nextUrl: string | null) => {
@@ -101,6 +130,7 @@ const ProfilePage = () => {
           userId={user.id}
           userName={user.name}
           currentImage={profileImageUrl}
+          useMeRoutes
           onClose={modal.close}
           onUploadSuccess={handleProfilePictureUpdated}
         />
@@ -108,41 +138,7 @@ const ProfilePage = () => {
     });
   }, [modal, profileImageUrl, handleProfilePictureUpdated, user]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!user?.id || isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      const response = await apiClient.put<UserObject>(
-        `/api/user/${user.id}`,
-        formData
-      );
-
-      const updatedUser = response.data ?? null;
-      if (updatedUser) {
-        setFormData(mapUserToFormData(updatedUser));
-        await update?.();
-      }
-
-      enqueueSnackbar('Dados atualizados com sucesso!', { variant: 'success' });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Não foi possível atualizar seus dados.';
-      enqueueSnackbar(message, { variant: 'error' });
-      console.error('Erro ao atualizar usuário:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleReset = () => {
-    setFormData(initialFormValues);
-  };
-
-  if (status === 'loading') {
+  if (status === 'loading' || isProfileLoading) {
     return (
       <Box sx={{ px: 3, py: 4 }}>
         <Skeleton variant="rounded" width={160} height={160} sx={{ mb: 3 }} />
@@ -169,7 +165,6 @@ const ProfilePage = () => {
   }
 
   const displayedProfileImage = profileImageUrl || FALLBACK_PROFILE_IMAGE;
-
   return (
     <Box component="section" sx={{ px: 3, py: 4 }}>
       <Typography variant="h5" component="h1" sx={{ mb: 4 }}>
@@ -194,6 +189,7 @@ const ProfilePage = () => {
             width={160}
             height={160}
             style={{ objectFit: 'cover' }}
+            loading="lazy"
           />
           <Box
             className="profile-edit-overlay"
@@ -212,62 +208,50 @@ const ProfilePage = () => {
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <EditRoundedIcon fontSize="small" />
-              <Typography variant="body2">Alterar foto</Typography>
+              <Typography variant="body2">
+                {t('profile.picture.change')}
+              </Typography>
             </Box>
           </Box>
         </ButtonBase>
         <Typography variant="caption" color="text.secondary">
-          Clique na foto para atualizar.
+          {t('profile.picture.description')}
         </Typography>
       </Box>
 
-      <Box component="form" onSubmit={handleSubmit}>
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              fullWidth
-              label="Nome"
-              value={formData.name}
-              onChange={handleInputChange('name')}
-              disabled={isSubmitting}
-              required
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextFieldMasked
-              fullWidth
-              label="Telefone"
-              placeholder="(11) 99999-9999"
-              maskType="phone"
-              value={formData.phone}
-              onChange={handleInputChange('phone')}
-              disabled={isSubmitting}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={handleReset}
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Salvando...' : 'Salvar alterações'}
-              </Button>
-            </Box>
-          </Grid>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            {t('profile.name')}
+          </Typography>
+          <Typography variant="body1">
+            {profileData.name || t('not-informed')}
+          </Typography>
         </Grid>
-      </Box>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            {t('profile.email')}
+          </Typography>
+          <Typography variant="body1">
+            {profileData.email || t('not-informed')}
+          </Typography>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            {t('profile.phone')}
+          </Typography>
+          <Typography variant="body1">
+            {profileData.phone || t('not-informed')}
+          </Typography>
+        </Grid>
+      </Grid>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 4 }}>
+        Se você precisar alterar seus dados cadastrais, entre em contato com o
+        administrador ou gestor responsável.
+      </Typography>
     </Box>
   );
 };

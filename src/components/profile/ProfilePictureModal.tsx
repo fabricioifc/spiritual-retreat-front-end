@@ -1,21 +1,24 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+
+import { useSnackbar } from 'notistack';
+
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import ImageRoundedIcon from '@mui/icons-material/ImageRounded';
+import UploadRoundedIcon from '@mui/icons-material/UploadRounded';
+import ZoomOutMapRoundedIcon from '@mui/icons-material/ZoomOutMapRounded';
 import {
   Box,
-  Stack,
-  Typography,
   Button,
   IconButton,
+  Stack,
   Tooltip,
-} from "@mui/material";
-import UploadRoundedIcon from "@mui/icons-material/UploadRounded";
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import ZoomOutMapRoundedIcon from "@mui/icons-material/ZoomOutMapRounded";
-import ImageRoundedIcon from "@mui/icons-material/ImageRounded";
-import { useDropzone } from "react-dropzone";
-import { useSnackbar } from "notistack";
-import api from "@/src/lib/axiosClientInstance";
+  Typography,
+} from '@mui/material';
+
+import api from '@/src/lib/axiosClientInstance';
 
 const MAX_SIZE_MB = 5;
 
@@ -23,31 +26,71 @@ export type ProfilePictureModalProps = {
   userId: string | number;
   userName?: string | null;
   currentImage?: string | null;
+  useMeRoutes?: boolean;
   onClose: VoidFunction;
   onUploadSuccess: (nextUrl: string | null) => Promise<void> | void;
 };
 
 type UploadResponse = {
   profile_picture?: string;
+  profilePicture?: string;
+  photoUrl?: string;
   url?: string;
   message?: string;
 };
 
+type ApiErrorPayload = {
+  message?: string;
+  error?: string;
+};
+
 const getFallbackInitial = (name?: string | null) => {
-  if (!name) return "";
+  if (!name) return '';
   return name
     .trim()
-    .split(" ")
+    .split(' ')
     .filter(Boolean)
     .map((part) => part[0]?.toUpperCase())
     .slice(0, 2)
-    .join("");
+    .join('');
+};
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (!error || typeof error !== 'object') return fallback;
+
+  const maybeResponse = (
+    error as { response?: { data?: ApiErrorPayload | string } }
+  ).response;
+  const payload = maybeResponse?.data;
+
+  if (typeof payload === 'string' && payload.trim()) return payload;
+  if (payload && typeof payload === 'object') {
+    if (payload.error?.trim()) return payload.error;
+    if (payload.message?.trim()) return payload.message;
+  }
+
+  const maybeMessage = (error as { message?: string }).message;
+  if (maybeMessage?.trim()) return maybeMessage;
+
+  return fallback;
+};
+
+const getUploadedPhotoUrl = (response: UploadResponse | null) => {
+  if (!response) return null;
+  return (
+    response.photoUrl ??
+    response.profile_picture ??
+    response.profilePicture ??
+    response.url ??
+    null
+  );
 };
 
 export function ProfilePictureModal({
   userId,
   userName,
   currentImage,
+  useMeRoutes = false,
   onClose,
   onUploadSuccess,
 }: ProfilePictureModalProps) {
@@ -84,7 +127,7 @@ export function ProfilePictureModal({
       if (selectedFile.size > MAX_SIZE_MB * 1024 * 1024) {
         const message = `A imagem deve ter no máximo ${MAX_SIZE_MB}MB.`;
         setErrorText(message);
-        enqueueSnackbar(message, { variant: "warning" });
+        enqueueSnackbar(message, { variant: 'warning' });
         return;
       }
 
@@ -108,7 +151,7 @@ export function ProfilePictureModal({
   );
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
-    accept: { "image/*": [] },
+    accept: { 'image/*': [] },
     multiple: false,
     onDrop,
     noClick: true,
@@ -124,39 +167,72 @@ export function ProfilePictureModal({
 
   const handleSave = async () => {
     if (!file) {
-      setErrorText("Selecione uma nova imagem para continuar.");
+      setErrorText('Selecione uma nova imagem para continuar.');
       return;
     }
 
     setIsSaving(true);
     try {
       const formData = new FormData();
-      formData.append("profile_picture", file);
+      formData.append('PhotoFile', file);
 
       const { data } = await api.post<UploadResponse>(
-        `/api/user/${userId}/profile-picture`,
+        useMeRoutes ? '/users/me/photo' : `/users/me/${userId}/photo`,
         formData,
         {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: { 'Content-Type': 'multipart/form-data' },
         }
       );
 
       const uploadResponse = data ?? null;
       const newUrl =
-        uploadResponse?.profile_picture ?? uploadResponse?.url ?? null;
+        getUploadedPhotoUrl(uploadResponse) ?? currentImage ?? null;
       await onUploadSuccess(newUrl);
-
       enqueueSnackbar(
-        uploadResponse?.message ?? "Foto atualizada com sucesso!",
+        uploadResponse?.message ?? 'Foto atualizada com sucesso!',
         {
-          variant: "success",
+          variant: 'success',
         }
       );
       onClose();
     } catch (error) {
-      console.error("Profile picture update error:", error);
-      enqueueSnackbar("Não foi possível atualizar a foto. Tente novamente.", {
-        variant: "error",
+      console.error('Profile picture update error:', error);
+      const message = getErrorMessage(
+        error,
+        'Não foi possível atualizar a foto. Tente novamente.'
+      );
+      setErrorText(message);
+      enqueueSnackbar(message, {
+        variant: 'error',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteCurrentImage = async () => {
+    setIsSaving(true);
+    try {
+      await api.delete(
+        useMeRoutes ? '/users/me/photo' : `/users/me/${userId}/photo`
+      );
+      setFile(null);
+      resetObjectUrl();
+      setPreviewUrl(null);
+      setErrorText(null);
+      await onUploadSuccess(null);
+      enqueueSnackbar('Foto removida com sucesso!', {
+        variant: 'success',
+      });
+    } catch (error) {
+      console.error('Profile picture delete error:', error);
+      const message = getErrorMessage(
+        error,
+        'Não foi possível remover a foto. Tente novamente.'
+      );
+      setErrorText(message);
+      enqueueSnackbar(message, {
+        variant: 'error',
       });
     } finally {
       setIsSaving(false);
@@ -185,34 +261,34 @@ export function ProfilePictureModal({
               ? theme.vars?.palette.action.hover
               : theme.vars?.palette.background.default,
           minHeight: 260,
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-          outline: "none",
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          outline: 'none',
           transition: (theme) =>
-            theme.transitions.create(["background-color", "border-color"]),
-          cursor: isSaving ? "not-allowed" : "pointer",
+            theme.transitions.create(['background-color', 'border-color']),
+          cursor: isSaving ? 'not-allowed' : 'pointer',
         }}
       >
         <input {...getInputProps()} />
         {currentPreview ? (
-          <Box sx={{ width: "100%", height: "100%", position: "relative" }}>
+          <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
             <img
               src={currentPreview}
-              alt={userName ? `Foto de ${userName}` : "Foto de perfil"}
+              alt={userName ? `Foto de ${userName}` : 'Foto de perfil'}
               style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
               }}
             />
             <Stack
               direction="row"
               spacing={1}
               sx={{
-                position: "absolute",
+                position: 'absolute',
                 top: 16,
                 right: 16,
               }}
@@ -226,7 +302,7 @@ export function ProfilePictureModal({
                     target="_blank"
                     rel="noreferrer"
                     disabled={isSaving}
-                    sx={{ bgcolor: "rgba(18, 18, 18, 0.55)", color: "#fff" }}
+                    sx={{ bgcolor: 'rgba(18, 18, 18, 0.55)', color: '#fff' }}
                   >
                     <ZoomOutMapRoundedIcon fontSize="small" />
                   </IconButton>
@@ -239,7 +315,7 @@ export function ProfilePictureModal({
                       size="small"
                       onClick={handleClearSelection}
                       disabled={isSaving}
-                      sx={{ bgcolor: "rgba(18, 18, 18, 0.55)", color: "#fff" }}
+                      sx={{ bgcolor: 'rgba(18, 18, 18, 0.55)', color: '#fff' }}
                     >
                       <DeleteOutlinedIcon fontSize="small" />
                     </IconButton>
@@ -260,11 +336,11 @@ export function ProfilePictureModal({
               sx={{
                 width: 88,
                 height: 88,
-                borderRadius: "50%",
+                borderRadius: '50%',
                 border: (theme) => `2px dashed ${theme.palette.divider}`,
-                display: "grid",
-                placeItems: "center",
-                color: "text.secondary",
+                display: 'grid',
+                placeItems: 'center',
+                color: 'text.secondary',
               }}
             >
               {initials ? (
@@ -312,6 +388,17 @@ export function ProfilePictureModal({
             Limpar seleção
           </Button>
         )}
+        {!file && currentPreview && (
+          <Button
+            variant="text"
+            color="error"
+            startIcon={<DeleteOutlinedIcon />}
+            onClick={handleDeleteCurrentImage}
+            disabled={isSaving}
+          >
+            Remover foto atual
+          </Button>
+        )}
       </Stack>
 
       {errorText && (
@@ -329,7 +416,7 @@ export function ProfilePictureModal({
           onClick={handleSave}
           disabled={isSaving || !file}
         >
-          {isSaving ? "Salvando..." : "Salvar nova foto"}
+          {isSaving ? 'Salvando...' : 'Salvar nova foto'}
         </Button>
       </Stack>
     </Stack>
