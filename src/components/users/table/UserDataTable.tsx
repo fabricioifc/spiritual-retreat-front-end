@@ -24,8 +24,12 @@ import { User } from '../types';
 import UserSummaryModal from '../userSummaryModal';
 
 type UserRequest = {
-  users: User[];
-  total: number;
+  items: User[];
+  totalCount: number;
+  skip: number;
+  take: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 };
 
 // Dados de exemplo
@@ -52,7 +56,7 @@ const columns: DataTableColumn<User>[] = [
     field: 'id',
     headerName: 'ID',
     width: 70,
-    type: 'number',
+    type: 'string',
   },
   {
     field: 'name',
@@ -218,9 +222,12 @@ export default function UserDataTable() {
     }, 2000);
   };
 
-  const usersDataArray: User[] | undefined = Array.isArray(usersData?.users)
-    ? usersData?.users
-    : ([usersData?.users] as unknown as User[]);
+  const usersDataArray: User[] = Array.isArray(usersData?.items)
+    ? usersData.items.filter(
+        (user): user is User =>
+          Boolean(user) && typeof user.id !== 'undefined' && user.id !== null
+      )
+    : [];
 
   if (isLoading || session.status === 'loading' || !session.data?.user) {
     return <Loading text="Carregando usuários..." />;
@@ -328,8 +335,9 @@ export default function UserDataTable() {
 
       <Box sx={{ flexGrow: 1, maxHeight: '90%' }}>
         <DataTable<User, UsersTableFiltersWithDates>
-          rows={usersDataArray ?? []}
-          rowCount={usersData?.total || 0}
+          rows={usersDataArray}
+          rowCount={usersData?.totalCount || 0}
+          getRowId={(row) => row.id}
           columns={columns}
           loading={isLoading || !session.data?.user || loading}
           disableVirtualization={true}
