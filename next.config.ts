@@ -3,6 +3,7 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
   eslint: {
     // Ignora erros de ESLint durante o build
     ignoreDuringBuilds: true,
