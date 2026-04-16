@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_URL: "${NEXT_PUBLIC_URL:-http://localhost:3000}"
+        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}"
+        NEXT_PUBLIC_API_BASE_URL: "${NEXT_PUBLIC_API_BASE_URL:-http://localhost:5000/api}"
     image: spiritual-retreat-front-end:latest
     container_name: spiritual-retreat-front-end
     restart: unless-stopped
